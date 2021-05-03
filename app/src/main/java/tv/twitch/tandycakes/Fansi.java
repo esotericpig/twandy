@@ -135,7 +135,7 @@ public class Fansi {
     final int length = format.length();
     int argIndex = 0;
     StringBuilder buffer = new StringBuilder((int)(length * 1.5));
-    Deque<String> styleStack = new LinkedList<>();
+    Deque<String> styleBlocks = new LinkedList<>();
 
     for(int i = 0; i < length; ) {
       final int codePoint = format.codePointAt(i);
@@ -227,8 +227,8 @@ public class Fansi {
           String styles = stylesBuffer.toString();
 
           buffer.append(styles);
-          // Push onto stack, even if empty, since have to pop later.
-          styleStack.push(styles);
+          // Add, even if empty, since have to remove later when hit "}".
+          styleBlocks.addLast(styles);
 
           continue;
         }
@@ -262,16 +262,13 @@ public class Fansi {
           continue;
         }
 
-        // Pop off the last style and reset the styles in the string.
-        if(!styleStack.isEmpty()) {
-          styleStack.pop();
-        }
-
+        // Remove the last style block and reset the styles in the string.
+        styleBlocks.pollLast();
         buffer.append(RESET);
 
         // Set back to the styles outside of this block "{...}".
-        for(String styles: styleStack) {
-          buffer.append(styles);
+        for(String styleBlock: styleBlocks) {
+          buffer.append(styleBlock);
         }
 
         ++i; // Processed "}".
