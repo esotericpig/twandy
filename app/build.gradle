@@ -70,8 +70,21 @@ jar {
 
   from {
     configurations.runtimeClasspath.collect {
-      it.isDirectory() ? it : zipTree(it)
+      def tree = it.isDirectory() ? fileTree(it) : zipTree(it)
+
+      tree.matching {
+        // Include only the essential files.
+        //include '**/*.class', '**/*.java', '**/resources/'
+
+        // Exclude Javadoc/files in root and META-INF.
+        exclude '*', 'META-INF/'
+      }
     }
+  }
+
+  // Add static files.
+  from("$rootDir/") {
+    include 'COPYING*', 'README*'
   }
 }
 
