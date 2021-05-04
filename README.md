@@ -33,13 +33,19 @@ $ ./gradlew run
 
 ## Usage
 
-Replace *twandy* with one of the methods to run the app from the *Setup* section.
+Replace *twandy* with one of the run methods from the *Setup* section.
 
 ```
 $ twandy --help
 ```
 
-TODO: user/pass, play/fhat
+TODO: user/pass
+
+TODO: play Solarus; download and run DX file
+
+TODO: play lichess
+
+TODO: run fhat
 
 ## License
 
