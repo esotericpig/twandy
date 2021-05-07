@@ -115,6 +115,8 @@ public class Fansi {
   }
 
   /**
+   * TODO: in future, use a different escape method for "{bold {red breaks}}"
+   *
    * <pre>
    * Examples:
    *   ("This is {bold some} text!");
@@ -122,6 +124,9 @@ public class Fansi {
    *   ("This is {bold/blue {}} text!", "cool");
    *   ("This text {{}} is escaped and not {{red styled}}!");
    *   ("This is {bold/red some }} {{ {}} stylish escaped text!");
+   *   ("This {bold {red works} } because of spaces.");
+   *   ("This {bold {red breaks}} because gets escaped.");
+   *   ("This {green is {red really } great }, right?");
    * </pre>
    */
   public String style(String format,Object... args) {
