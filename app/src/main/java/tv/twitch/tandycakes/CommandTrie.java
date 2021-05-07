@@ -14,6 +14,14 @@ import java.util.Map;
  */
 public class CommandTrie {
   private final Node rootNode = new Node();
+  private boolean allowLonger = true;
+
+  public CommandTrie() {
+  }
+
+  public CommandTrie(boolean allowLonger) {
+    this.allowLonger = allowLonger;
+  }
 
   public void addCommand(String command) {
     addCommand(command,command);
@@ -61,14 +69,6 @@ public class CommandTrie {
   }
 
   public String findCommand(String partial,String defaultValue) {
-    return findCommand(partial,defaultValue,true);
-  }
-
-  public String findCommand(String partial,boolean allowLonger) {
-    return findCommand(partial,null,allowLonger);
-  }
-
-  public String findCommand(String partial,String defaultValue,boolean allowLonger) {
     if(partial == null) {
       return defaultValue;
     }
@@ -102,6 +102,14 @@ public class CommandTrie {
     }
 
     return (node.getCommand() != null) ? node.getCommand() : defaultValue;
+  }
+
+  public void setAllowLonger(boolean allowLonger) {
+    this.allowLonger = allowLonger;
+  }
+
+  public boolean isAllowLonger() {
+    return allowLonger;
   }
 
   /**

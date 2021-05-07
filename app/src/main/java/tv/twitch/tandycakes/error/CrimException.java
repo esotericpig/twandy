@@ -11,23 +11,23 @@ import java.io.Serial;
  * @author Jonathan Bradley Whited
  * @since 1.0.0
  */
-public class CliException extends RuntimeException {
+public class CrimException extends RuntimeException {
   @Serial
   private static final long serialVersionUID = 1L;
 
-  public CliException() {
+  public CrimException() {
     super();
   }
 
-  public CliException(String message) {
+  public CrimException(String message) {
     super(message);
   }
 
-  public CliException(String message,Throwable cause) {
+  public CrimException(String message,Throwable cause) {
     super(message,cause);
   }
 
-  public CliException(Throwable cause) {
+  public CrimException(Throwable cause) {
     super(cause);
   }
 }

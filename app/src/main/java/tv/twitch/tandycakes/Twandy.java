@@ -6,150 +6,57 @@
 package tv.twitch.tandycakes;
 
 import com.esotericpig.jeso.botbuddy.BotBuddy;
-import tv.twitch.tandycakes.error.CliException;
+import tv.twitch.tandycakes.crim.Command;
+import tv.twitch.tandycakes.crim.Crim;
+import tv.twitch.tandycakes.error.CrimException;
 
+import java.awt.AWTException;
 import java.awt.Point;
-import java.util.Locale;
-import java.util.Scanner;
+import java.util.Map;
 
 /**
  * @author Jonathan Bradley Whited
  * @since 1.0.0
  */
-public class Twandy {
+public class Twandy extends Crim {
+  // TODO: twitch channel where can decide what youtube video to play
+  // TODO: play "hello <username>" audio text-to-speech when someone enters (after 5min)
+
   public static void main(String[] args) {
     Twandy twandy = new Twandy(args);
 
     try {
-      twandy.run();
+      twandy.parse(args);
     }
-    catch(CliException e) {
-      twandy.showHelp("{err ERROR }: " + e.getLocalizedMessage());
+    catch(CrimException e) {
+      // Concat to empty string, in case null.
+      twandy.showHelp("" + e.getLocalizedMessage());
     }
   }
 
-  public static final String APP_NAME = "twandy";
-  public static final String APP_VERSION = "0.1.0";
-
-  private final String[] args;
-  private final Scanner stdin = new Scanner(System.in);
-  private final Fansi fansi = new Fansi();
-  private final CommandTrie commandTrie = new CommandTrie();
   private final CommandTrie gameArgTrie = new CommandTrie();
 
   public Twandy(String[] args) {
-    this.args = args;
-
-    // Add our custom styles.
-    this.fansi.storeStyleAlias("title","bold/red");
-    this.fansi.storeStyleAlias("usg","bold/blue");
-    this.fansi.storeStyleAlias("arg","bold/white");
-    this.fansi.storeStyleAlias("opt","bold/yellow");
-    this.fansi.storeStyleAlias("err","bold/btRed");
-
-    this.commandTrie.addCommand("x");
-    this.commandTrie.addCommand("play");
-    this.commandTrie.addCommand("fhat");
-
-    // Options, not commands, but that's okay.
-    this.commandTrie.addCommandAndAlias("--help","-h");
-    this.commandTrie.addCommandAndAlias("--version","-v");
+    super("twandy","0.3.0");
 
     this.gameArgTrie.addCommand("solarus");
     this.gameArgTrie.addCommand("lichess");
+
+    root.addAbout("{bold/white Tandy, have you had your cake today? }");
+
+    root.addCommand("x","Show coords of cursor",this::showCoords,"coords");
+
+    Command playCmd = root.addCommand("play <game>",this::playGame);
+    playCmd.addSummary("Play a game:");
+    playCmd.addSummary("- solarus");
+    playCmd.addSummary("- lichess");
+
+    root.addCommand("fhat","Run filtered chat",this::runFhat);
+
+    addBasics();
   }
 
-  public void run() throws CliException {
-    String commandArg = parseCommand(0);
-
-    if(commandArg == null || commandArg.isEmpty()) {
-      showHelp();
-      return;
-    }
-
-    String command = commandTrie.findCommand(commandArg,"");
-
-    switch(command) {
-      case "x" -> showCoords();
-      case "play" -> playGame();
-      case "fhat" -> runFhat();
-
-      case "--help" -> showHelp();
-      case "--version" -> showVersion();
-
-      default -> throw new CliException(Formatter.format("Invalid command/option: '{}'",commandArg));
-    }
-  }
-
-  public String parseCommand(int argIndex) {
-    if(argIndex < 0) {
-      argIndex = args.length + argIndex;
-    }
-    if(argIndex < 0 || argIndex >= args.length) {
-      return null;
-    }
-
-    return args[argIndex].trim().toLowerCase(Locale.ROOT);
-  }
-
-  public void printCmdOrOpt(String detail) {
-    printCmdOrOpt("","",detail);
-  }
-
-  public void printCmdOrOpt(String cmdOrOpt,String detail) {
-    printCmdOrOpt(cmdOrOpt,"",detail);
-  }
-
-  public void printCmdOrOpt(String cmdOrOpt,String arg,String detail) {
-    // Have to do it this way because style takes up space internally,
-    //   but not actually on the screen.
-    // Also, if we were to do it the other way using the styled string,
-    //   then we have to use a big number like "%-35s", which would be
-    //   bad if fansi is disabled.
-
-    int length = 15 - cmdOrOpt.length();
-
-    if(length < 0) {
-      length = 0;
-    }
-
-    fansi.srintln("  {opt {} } {arg {} }    {}"
-        ,cmdOrOpt,String.format("%-" + length + "s",arg),detail);
-  }
-
-  public void showHelp() {
-    showHelp(null);
-  }
-
-  public void showHelp(String error) {
-    fansi.srintln("{title USAGE }");
-    fansi.srintln("  {usg {} } {arg <options> <commands> }",APP_NAME);
-    fansi.srintln();
-    fansi.srintln("{title ABOUT }");
-    fansi.srintln("  {bold/white Tandy, have you had your cake today? }");
-    fansi.srintln();
-    fansi.srintln("{title COMMANDS }");
-    printCmdOrOpt("x","show coords of cursor");
-    printCmdOrOpt("play","<game>","play a game:");
-    printCmdOrOpt("- solarus");
-    printCmdOrOpt("- lichess");
-    printCmdOrOpt("fhat","show filtered chat");
-    fansi.srintln();
-    fansi.srintln("{title OPTIONS }");
-    printCmdOrOpt("-h --help","show help (this)");
-    printCmdOrOpt("-v --version","show version");
-
-    if(error != null) {
-      fansi.srintln();
-      fansi.srintln(error);
-    }
-  }
-
-  public void showVersion() {
-    fansi.srintln("{usg {} } {arg v{} }",APP_NAME,APP_VERSION);
-  }
-
-  public void showCoords() {
+  public void showCoords(Crim crim,Command cmd,Map<String,String> opts,Map<String,String> args) {
     fansi.srintln("{bold/yellow");
     fansi.println("> Press enter to continue.");
     fansi.println("> Enter in any char to exit.");
@@ -167,14 +74,14 @@ public class Twandy {
       }
     }
 
-    fansi.srintln();
+    fansi.println();
   }
 
-  public void playGame() {
-    String gameArg = parseCommand(1);
+  public void playGame(Crim crim,Command cmd,Map<String,String> opts,Map<String,String> args) {
+    String gameArg = args.get("<game>");
 
     if(gameArg == null || gameArg.isEmpty()) {
-      throw new CliException("No <game> arg.");
+      throw new CrimException("No <game> arg.");
     }
 
     String game = gameArgTrie.findCommand(gameArg,"");
@@ -183,7 +90,8 @@ public class Twandy {
       case "solarus" -> playSolarus();
       case "lichess" -> playLichess();
 
-      default -> throw new CliException(Formatter.format("Invalid <game> arg: '{}'",gameArg));
+      default -> throw new CrimException(Formatter.format(
+          "Invalid <game> arg: '{}'",gameArg));
     }
   }
 
@@ -193,6 +101,64 @@ public class Twandy {
   public void playLichess() {
   }
 
-  public void runFhat() {
+  public void runFhat(Crim crim,Command cmd,Map<String,String> opts,Map<String,String> args) {
+  }
+}
+
+/*
+
+// ctor grabs user/pass from env vars or sys props using user/pass as keys?
+Game game = new Game(channel, user, pass);
+
+game.setAutoDelay(200); // 200ms
+game.setMessageFloodingDelay(3000); // 3s
+game.setPrefixRegex("[,.!]"); // "^\s*(#{prefix})(.+)" => grab \2 => split("\s+")
+
+game.trie.addCommand("up");
+// ...
+
+game.onChatMessage((game,commands) {
+  for(String cmd: commands) {
+    switch(cmd) {
+      case "up":
+        game.botbuddy.type(...);
+    }
+  }
+});
+
+ */
+
+// TODO: Fhat class
+
+// TODO: parseChatMessage
+// TODO: onChatMessage( functional interface )
+// TODO: display of commands in onChatMessage
+// TODO: call beginSafeMode() in connect/run/start/whatever method
+class Game implements AutoCloseable {
+  public final Fansi fansi;
+  public final BotBuddy bot;
+  public final CommandTrie trie = new CommandTrie();
+
+  public Game(Fansi fansi) throws AWTException {
+    this.fansi = fansi;
+    this.bot = BotBuddy.builder()
+        .autoDelay(true)
+        .autoWaitForIdle(true)
+        .releaseMode(true)
+        .build();
+  }
+
+  public void play() {
+    // TODO: test with just while-loop and stdin
+  }
+
+  @Override
+  public void close() {
+    bot.endSafeMode();
+    bot.close();
+  }
+
+  public void setAutoDelay(int autoDelay) {
+    bot.setAutoDelay(autoDelay);
   }
 }
