@@ -155,13 +155,17 @@ public class Command {
     return buildFullName(null);
   }
 
-  public String buildFullName(Command commandToStopAt) {
+  public String buildFullName(Command commandToStopBefore) {
     Deque<String> names = new LinkedList<>();
 
-    for(Command command = this; command != commandToStopAt; command = command.parent) {
+    for(Command command = this; command != commandToStopBefore; command = command.parent) {
       names.addFirst(command.name);
     }
 
     return String.join(" ",names);
+  }
+
+  public boolean isRoot() {
+    return parent == null;
   }
 }

@@ -28,6 +28,8 @@ public class Crim {
   // TODO: command/option groups?
   // TODO: implement "--" to stop parsing rest of args to allow "--" in arg's text
   // TODO: implement way to capture all remaining args for a command (for help command)
+  // TODO: multi-arg for option "-f file1 -f file2"
+  // FIXME: "twandy play --help" should work, not ask for "<arg>"
 
   public final Scanner stdin = new Scanner(System.in);
   public final Fansi fansi = new Fansi();
@@ -49,9 +51,8 @@ public class Crim {
 
     // Add our custom styles.
     this.fansi.storeStyleAlias("title","bold/red");
-    this.fansi.storeStyleAlias("usage","bold/green");
-    this.fansi.storeStyleAlias("arg","bold/white");
     this.fansi.storeStyleAlias("cmd","bold/green");
+    this.fansi.storeStyleAlias("arg","bold/white");
     this.fansi.storeStyleAlias("opt","bold/yellow");
     this.fansi.storeStyleAlias("err","bold/btRed");
   }
@@ -78,7 +79,7 @@ public class Crim {
   }
 
   public void runRoot(Crim crim,Command cmd,Map<String,String> opts,Map<String,String> args) {
-    showHelp();
+    crim.showHelp();
   }
 
   public void runHelp(Crim crim,Command cmd,Map<String,String> opts,Map<String,String> args) {
@@ -93,7 +94,7 @@ public class Crim {
     Command command = root;
     final Map<String,String> cmdOpts = new LinkedHashMap<>();
     final Map<String,String> cmdArgs = new LinkedHashMap<>();
-    CommandRunner optionRunner = null;
+    Option optionToRun = null;
 
     for(int i = 0; i < args.length; ++i) {
       String arg = args[i];
@@ -131,14 +132,15 @@ public class Crim {
         }
 
         if(opt.runner != null) {
-          if(optionRunner != null) {
+          if(optionToRun != null) {
             throw new CrimException(Formatter.format(
-                "{} '{}' conflicts with another global/local option runner."
+                "{} '{}' conflicts with option '{}' runner."
                 ,buildExceptionCommandOptionText(command)
-                ,optName));
+                ,optName
+                ,optionToRun.name));
           }
 
-          optionRunner = opt.runner;
+          optionToRun = opt;
         }
       }
       else if((opt = globalOptions.optionTrie.find(optName)) != null) {
@@ -164,19 +166,20 @@ public class Crim {
         }
 
         if(opt.runner != null) {
-          if(optionRunner != null) {
+          if(optionToRun != null) {
             throw new CrimException(Formatter.format(
-                "Global option '{}' conflicts with another global/local option runner."
-                ,optName));
+                "Global option '{}' conflicts with option '{}' runner."
+                ,optName
+                ,optionToRun.name));
           }
 
-          optionRunner = opt.runner;
+          optionToRun = opt;
         }
       }
       else if((subcmd = command.commandTrie.find(arg)) != null) {
         // If there is an option runner, ignore args.
         // For example, "--help subcmd1 subcmd2".
-        if(optionRunner == null && subcmd.argNames != null && subcmd.argNames.length > 0) {
+        if(optionToRun == null && subcmd.argNames != null && subcmd.argNames.length > 0) {
           if((i + subcmd.argNames.length) >= args.length) {
             throw new CrimException(Formatter.format(
                 "{} '{}' requires {} arg{}."
@@ -194,11 +197,17 @@ public class Crim {
         command = subcmd;
       }
       else {
-        throw new CrimException(Formatter.format(
-            "Invalid command/option/arg{}: '{}'"
-            ,(command == root) ? ""
-                : Formatter.format(" for command '{}'",command.buildFullName(root))
-            ,arg));
+        if(command.isRoot()) {
+          throw new CrimException(Formatter.format(
+              "Invalid command/option: '{}'"
+              ,arg));
+        }
+        else {
+          throw new CrimException(Formatter.format(
+              "For command '{}', invalid command/option: '{}'"
+              ,command.buildFullName(root)
+              ,arg));
+        }
       }
     }
 
@@ -208,8 +217,8 @@ public class Crim {
     // For example, "--version" should show the version, not run the command.
     // For example, "--help subcmd1 subcmd2" should show the help of subcmd2,
     //   not run subcmd2.
-    if(optionRunner != null) {
-      runner = optionRunner;
+    if(optionToRun != null) {
+      runner = optionToRun.runner;
     }
     else {
       if(command.runner != null) {
@@ -232,7 +241,7 @@ public class Crim {
   }
 
   public String buildExceptionCommandOptionText(Command command) {
-    if(command == root) {
+    if(command.isRoot()) {
       return "Option";
     }
 
@@ -240,7 +249,7 @@ public class Crim {
   }
 
   public String buildExceptionSubcommandText(Command command) {
-    if(command == root) {
+    if(command.isRoot()) {
       return "Command";
     }
 
@@ -278,7 +287,7 @@ public class Crim {
 
   public void showCommandUsage(Command command) {
     fansi.srintln("{title USAGE }");
-    fansi.srintln("  {usage {} } {arg <options> <commands> }",command.buildFullName());
+    fansi.srintln("  {cmd {} } {arg <options> <commands> }",command.buildFullName());
 
     if(command.aliases != null && command.aliases.length > 0) {
       fansi.println();
@@ -318,7 +327,7 @@ public class Crim {
     if(printNewline) {
       fansi.println();
     }
-    if(command == root) {
+    if(command.isRoot()) {
       fansi.srintln("{title COMMANDS }");
     }
     else {
@@ -400,10 +409,6 @@ public class Crim {
   }
 
   public boolean showCommandOptions(Command command,boolean printNewline) {
-    return showCommandOptions(command,printNewline,false);
-  }
-
-  public boolean showCommandOptions(Command command,boolean printNewline,boolean isGlobal) {
     if(command.options.isEmpty()) {
       return printNewline;
     }
@@ -411,7 +416,7 @@ public class Crim {
     if(printNewline) {
       fansi.println();
     }
-    if(isGlobal) {
+    if(command == globalOptions) {
       fansi.srintln("{title GLOBAL OPTIONS }");
     }
     else {
@@ -487,10 +492,10 @@ public class Crim {
   }
 
   public boolean showGlobalOptions(boolean printNewline) {
-    return showCommandOptions(globalOptions,printNewline,true);
+    return showCommandOptions(globalOptions,printNewline);
   }
 
   public void showVersion() {
-    fansi.srintln("{usage {} } {arg v{} }",appName,appVersion);
+    fansi.srintln("{cmd {} } {arg v{} }",appName,appVersion);
   }
 }
