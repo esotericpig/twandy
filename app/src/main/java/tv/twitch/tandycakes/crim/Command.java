@@ -5,8 +5,8 @@
 
 package tv.twitch.tandycakes.crim;
 
-import tv.twitch.tandycakes.CommandTrie;
 import tv.twitch.tandycakes.Formatter;
+import tv.twitch.tandycakes.LinkedTrie;
 
 import java.util.Deque;
 import java.util.LinkedHashMap;
@@ -32,10 +32,10 @@ public class Command {
   public CommandRunner runner;
 
   public final Map<String,Command> commands = new LinkedHashMap<>();
-  public final CommandTrie commandTrie = new CommandTrie();
+  public final LinkedTrie<Command> commandTrie = new LinkedTrie<>();
 
   public final Map<String,Option> options = new LinkedHashMap<>();
-  public final CommandTrie optionTrie = new CommandTrie(false);
+  public final LinkedTrie<Option> optionTrie = new LinkedTrie<>(false);
 
   public static String[] split(String cmdAndArgs) {
     return ARG_PATTERN.split(cmdAndArgs);
@@ -113,10 +113,10 @@ public class Command {
     }
 
     options.put(option.name,option);
-    optionTrie.addCommand(option.name);
+    optionTrie.add(option.name,option);
 
     if(option.alias != null) {
-      optionTrie.addAlias(option.name,option.alias);
+      optionTrie.addAlias(option,option.alias);
     }
 
     return option;
@@ -142,10 +142,10 @@ public class Command {
     }
 
     commands.put(command.name,command);
-    commandTrie.addCommand(command.name);
+    commandTrie.add(command.name,command);
 
     if(command.aliases != null && command.aliases.length > 0) {
-      commandTrie.addAlias(command.name,command.aliases);
+      commandTrie.addAlias(command,command.aliases);
     }
 
     return command;

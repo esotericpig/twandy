@@ -45,7 +45,7 @@ public class Crim {
     this.appName = appName;
     this.appVersion = appVersion;
     this.root = new Command(null,appName,summary,this::runRoot);
-    this.globalOptions = new Command(this.root,"globalopts",null,null); // Don't use adCommand().
+    this.globalOptions = new Command(this.root,"globalopts",null,null); // Don't use addCommand().
 
     // Add our custom styles.
     this.fansi.storeStyleAlias("title","bold/red");
@@ -102,19 +102,11 @@ public class Crim {
       String optName = parts[0];
       String optArg = (parts.length == 2) ? parts[1] : null;
 
-      String name = null;
+      Option opt = null;
+      Command subcmd = null;
 
       // Local opts should supersede global opts.
-      if((name = command.optionTrie.findCommand(optName)) != null) {
-        Option opt = command.options.get(name);
-
-        if(opt == null) {
-          throw new CrimException(Formatter.format(
-              "{} '{}' does not exist in option map; internal error."
-              ,buildExceptionCommandOptionText(command)
-              ,optName));
-        }
-
+      if((opt = command.optionTrie.find(optName)) != null) {
         if(opt.argName == null) {
           if(optArg != null) {
             throw new CrimException(Formatter.format(
@@ -149,15 +141,7 @@ public class Crim {
           optionRunner = opt.runner;
         }
       }
-      else if((name = globalOptions.optionTrie.findCommand(optName)) != null) {
-        Option opt = globalOptions.options.get(name);
-
-        if(opt == null) {
-          throw new CrimException(Formatter.format(
-              "Global option '{}' does not exist in option map; internal error."
-              ,optName));
-        }
-
+      else if((opt = globalOptions.optionTrie.find(optName)) != null) {
         if(opt.argName == null) {
           if(optArg != null) {
             throw new CrimException(Formatter.format(
@@ -189,16 +173,7 @@ public class Crim {
           optionRunner = opt.runner;
         }
       }
-      else if((name = command.commandTrie.findCommand(arg)) != null) {
-        Command subcmd = command.commands.get(name);
-
-        if(subcmd == null) {
-          throw new CrimException(Formatter.format(
-              "{} '{}' does not exist in command map; internal error."
-              ,buildExceptionSubcommandText(command)
-              ,arg));
-        }
-
+      else if((subcmd = command.commandTrie.find(arg)) != null) {
         // If there is an option runner, ignore args.
         // For example, "--help subcmd1 subcmd2".
         if(optionRunner == null && subcmd.argNames != null && subcmd.argNames.length > 0) {

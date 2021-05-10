@@ -21,7 +21,7 @@ public class Fansi {
 
   private PrintStream out;
   private boolean isEnabled = true;
-  private final CommandTrie styleTrie = new CommandTrie();
+  private final LinkedTrie<String> styles = new LinkedTrie<>();
 
   public Fansi() {
     this(System.out);
@@ -79,7 +79,7 @@ public class Fansi {
   }
 
   protected void storeStyleKey(String key,String style) {
-    styleTrie.addCommand(key,style);
+    styles.add(key,style);
   }
 
   public void storeStyle(String name,String style) {
@@ -97,21 +97,21 @@ public class Fansi {
   }
 
   public void storeStyleAlias(String alias,String styleNames) {
-    StringBuilder styles = new StringBuilder(styleNames.length());
+    StringBuilder stylesBuffer = new StringBuilder(styleNames.length());
 
     for(String styleName: styleNames.split("/")) {
       String styleKey = buildKey(styleName);
-      String style = styleTrie.findCommand(styleKey);
+      String style = styles.find(styleKey);
 
       if(style == null) {
         throw new ParseException(Formatter.format("Invalid style name/alias '{}' with key '{}'."
             ,styleName,styleKey));
       }
 
-      styles.append(style);
+      stylesBuffer.append(style);
     }
 
-    storeStyle(alias,styles.toString());
+    storeStyle(alias,stylesBuffer.toString());
   }
 
   /**
@@ -199,7 +199,7 @@ public class Fansi {
 
               // Allow empty names for future placeholders: "This is { some } text."
               if(!styleKey.isEmpty()) {
-                String style = styleTrie.findCommand(styleKey);
+                String style = styles.find(styleKey);
 
                 if(style == null) {
                   throw new ParseException(Formatter.format(
@@ -229,11 +229,11 @@ public class Fansi {
             i += charCount3;
           }
 
-          String styles = stylesBuffer.toString();
+          String stylesStr = stylesBuffer.toString();
 
-          buffer.append(styles);
+          buffer.append(stylesStr);
           // Add, even if empty, since have to remove later when hit "}".
-          styleBlocks.addLast(styles);
+          styleBlocks.addLast(stylesStr);
 
           continue;
         }

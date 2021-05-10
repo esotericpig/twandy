@@ -23,7 +23,7 @@ public class Twandy extends Crim {
   // TODO: play "hello <username>" audio text-to-speech when someone enters (after 5min)
 
   public static void main(String[] args) {
-    Twandy twandy = new Twandy(args);
+    Twandy twandy = new Twandy();
 
     try {
       twandy.parse(args);
@@ -34,13 +34,13 @@ public class Twandy extends Crim {
     }
   }
 
-  private final CommandTrie gameArgTrie = new CommandTrie();
+  private final LinkedTrie<String> gameArgValues = new LinkedTrie<>();
 
-  public Twandy(String[] args) {
+  public Twandy() {
     super("twandy","0.3.0");
 
-    this.gameArgTrie.addCommand("solarus");
-    this.gameArgTrie.addCommand("lichess");
+    this.gameArgValues.add("solarus");
+    this.gameArgValues.add("lichess");
 
     root.addAbout("{bold/white Tandy, have you had your cake today? }");
 
@@ -84,7 +84,7 @@ public class Twandy extends Crim {
       throw new CrimException("No <game> arg.");
     }
 
-    String game = gameArgTrie.findCommand(gameArg,"");
+    String game = gameArgValues.find(gameArg,"");
 
     switch(game) {
       case "solarus" -> playSolarus();
@@ -114,7 +114,7 @@ game.setAutoDelay(200); // 200ms
 game.setMessageFloodingDelay(3000); // 3s
 game.setPrefixRegex("[,.!]"); // "^\s*(#{prefix})(.+)" => grab \2 => split("\s+")
 
-game.trie.addCommand("up");
+game.chatCommands.add("up");
 // ...
 
 game.onChatMessage((game,commands) {
@@ -137,7 +137,7 @@ game.onChatMessage((game,commands) {
 class Game implements AutoCloseable {
   public final Fansi fansi;
   public final BotBuddy bot;
-  public final CommandTrie trie = new CommandTrie();
+  public final LinkedTrie<String> chatCommands = new LinkedTrie<>();
 
   public Game(Fansi fansi) throws AWTException {
     this.fansi = fansi;
