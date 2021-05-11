@@ -115,7 +115,7 @@ public class Fansi {
   }
 
   /**
-   * TODO: in future, use a different escape method for "{bold {red breaks}}"
+   * TODO: in future, use a different escape method for "{bold {red breaks}}"?
    *
    * <pre>
    * Examples:

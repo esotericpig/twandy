@@ -9,6 +9,8 @@ import tv.twitch.tandycakes.Fansi;
 import tv.twitch.tandycakes.Formatter;
 import tv.twitch.tandycakes.error.CrimException;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,11 +27,15 @@ import java.util.Scanner;
  * @since 1.0.0
  */
 public class Crim {
-  // TODO: command/option groups?
+  // TODO: command/option groups? for visual use only
+  // TODO: parse any opt/arg/cmd prefixed with "-" or "--" as an opt?
   // TODO: implement "--" to stop parsing rest of args to allow "--" in arg's text
-  // TODO: implement way to capture all remaining args for a command (for help command)
-  // TODO: multi-arg for option "-f file1 -f file2"
-  // FIXME: "twandy play --help" should work, not ask for "<arg>"
+  // TODO: implement "-aBcD" combined short opts?
+  // TODO: add "--no-opt" automatically for boolean "--opt" if request it?
+  // TODO: add fuzzy suggestions for invalid commands/opts?
+  // TODO: set required/optional opts/args?
+  // TODO: change to use functional DSL, like Ruby?
+  // TODO: multi-args for options "-f file1 -f file2"
 
   public final Scanner stdin = new Scanner(System.in);
   public final Fansi fansi = new Fansi();
@@ -46,8 +52,11 @@ public class Crim {
   public Crim(String appName,String appVersion,String summary) {
     this.appName = appName;
     this.appVersion = appVersion;
-    this.root = new Command(null,appName,summary,this::runRoot);
-    this.globalOptions = new Command(this.root,"globalopts",null,null); // Don't use addCommand().
+    this.root = Command.builder()
+        .name(appName).summary(summary).runner(this::runRootCommand).build();
+    // Do NOT use this/root.addCommand().
+    this.globalOptions = Command.builder()
+        .parent(this.root).name("globalopts").build();
 
     // Add our custom styles.
     this.fansi.storeStyleAlias("title","bold/red");
@@ -64,42 +73,81 @@ public class Crim {
   }
 
   public Option addHelpGlobalOption() {
-    return globalOptions.addOption("--help","-h","Show this help",this::runHelp);
+    return globalOptions.addOption(Option.builder()
+        .name("--help").alias("-h")
+        .summary("Show this help.")
+        .runner(this::runHelpGlobalOption));
   }
 
   public Option addVersionOption() {
-    return root.addOption("--version","-v","Show version",this::runVersion);
+    return root.addOption(Option.builder()
+        .name("--version").alias("-v")
+        .summary("Show version.")
+        .runner(this::runVersionOption));
   }
 
   public Command addHelpCommand() {
-    // TODO: implement; doesn't currently work because need all rest of args
-
-    //return root.addCommand("help","Help about a command",this::runHelp);
-    return null;
+    return root.addCommand(Command.builder()
+        .name("help")
+        .multiArg(true)
+        .summary("Help with a command.")
+        .runner(this::runHelpCommand));
   }
 
-  public void runRoot(Crim crim,Command cmd,Map<String,String> opts,Map<String,String> args) {
+  public void runRootCommand(Crim crim,Command cmd,CommandData data) {
     crim.showHelp();
   }
 
-  public void runHelp(Crim crim,Command cmd,Map<String,String> opts,Map<String,String> args) {
+  public void runHelpGlobalOption(Crim crim,Command cmd,CommandData data) {
     crim.showHelp(cmd);
   }
 
-  public void runVersion(Crim crim,Command cmd,Map<String,String> opts,Map<String,String> args) {
+  public void runVersionOption(Crim crim,Command cmd,CommandData data) {
     crim.showVersion();
   }
 
+  public void runHelpCommand(Crim crim,Command cmd,CommandData data) {
+    Command cmdToShow = root;
+
+    for(String multiArg: data.multiArgs()) {
+      Command subcmd = cmdToShow.commandTrie.find(multiArg);
+
+      if(subcmd != null) {
+        cmdToShow = subcmd;
+      }
+    }
+
+    crim.showHelp(cmdToShow);
+  }
+
   public void parse(String... args) {
-    Command command = root;
+    boolean hasOptRunner = parse(true,false,args);
+
+    parse(false,hasOptRunner,args);
+  }
+
+  /**
+   * <pre>
+   * Not polished, just a monster method for initial idea.
+   * </pre>
+   */
+  public boolean parse(boolean isForOptionRunner,boolean hasOptionRunner,String... args) {
+    Command cmd = root;
+
+    final Map<String,String> globalOpts = new LinkedHashMap<>();
     final Map<String,String> cmdOpts = new LinkedHashMap<>();
     final Map<String,String> cmdArgs = new LinkedHashMap<>();
+    final Deque<String> cmdMultiArgs = new ArrayDeque<>();
+
     Option optionToRun = null;
+    String[] subcmdArgNames = null;
+    int subcmdArgNameIndex = 0;
+    boolean eatAllSubcmdArgs = false;
 
     for(int i = 0; i < args.length; ++i) {
       String arg = args[i];
-
       String[] parts = Option.split(arg);
+
       String optName = parts[0];
       String optArg = (parts.length == 2) ? parts[1] : null;
 
@@ -107,37 +155,41 @@ public class Crim {
       Command subcmd = null;
 
       // Local opts should supersede global opts.
-      if((opt = command.optionTrie.find(optName)) != null) {
+      if((opt = cmd.optionTrie.find(optName)) != null) {
         if(opt.argName == null) {
           if(optArg != null) {
             throw new CrimException(Formatter.format(
-                "{} '{}' does not accept args: '{}'"
-                ,buildExceptionCommandOptionText(command)
+                "{} '{}' does not accept args: '{}'."
+                ,buildExceptionCommandOptionText(cmd)
                 ,optName,optArg));
           }
+
+          cmdOpts.put(opt.name,"");
         }
         else {
           if(optArg == null) {
             if((++i) >= args.length) {
               throw new CrimException(Formatter.format(
                   "{} '{}' requires an arg."
-                  ,buildExceptionCommandOptionText(command)
+                  ,buildExceptionCommandOptionText(cmd)
                   ,optName));
             }
 
             optArg = args[i];
           }
 
-          cmdOpts.put(opt.argName,optArg);
+          cmdOpts.put(opt.name,optArg);
         }
 
         if(opt.runner != null) {
+          if(isForOptionRunner) {
+            return true;
+          }
           if(optionToRun != null) {
             throw new CrimException(Formatter.format(
                 "{} '{}' conflicts with option '{}' runner."
-                ,buildExceptionCommandOptionText(command)
-                ,optName
-                ,optionToRun.name));
+                ,buildExceptionCommandOptionText(cmd)
+                ,optName,optionToRun.name));
           }
 
           optionToRun = opt;
@@ -147,67 +199,111 @@ public class Crim {
         if(opt.argName == null) {
           if(optArg != null) {
             throw new CrimException(Formatter.format(
-                "Global option '{}' does not accept args: '{}'"
+                "Global option '{}' does not accept args: '{}'."
                 ,optName,optArg));
           }
+
+          globalOpts.put(opt.name,"");
         }
         else {
           if(optArg == null) {
             if((++i) >= args.length) {
               throw new CrimException(Formatter.format(
-                  "Global option '{}' requires an arg."
-                  ,optName));
+                  "Global option '{}' requires an arg.",optName));
             }
 
             optArg = args[i];
           }
 
-          cmdOpts.put(opt.argName,optArg);
+          globalOpts.put(opt.name,optArg);
         }
 
         if(opt.runner != null) {
+          if(isForOptionRunner) {
+            return true;
+          }
           if(optionToRun != null) {
             throw new CrimException(Formatter.format(
                 "Global option '{}' conflicts with option '{}' runner."
-                ,optName
-                ,optionToRun.name));
+                ,optName,optionToRun.name));
           }
 
           optionToRun = opt;
         }
       }
-      else if((subcmd = command.commandTrie.find(arg)) != null) {
-        // If there is an option runner, ignore args.
-        // For example, "--help subcmd1 subcmd2".
-        if(optionToRun == null && subcmd.argNames != null && subcmd.argNames.length > 0) {
-          if((i + subcmd.argNames.length) >= args.length) {
-            throw new CrimException(Formatter.format(
-                "{} '{}' requires {} arg{}."
-                ,buildExceptionSubcommandText(command)
-                ,arg,subcmd.argNames.length
-                ,(subcmd.argNames.length == 1) ? "" : 's'));
-          }
-
-          for(String argName: subcmd.argNames) {
-            ++i;
-            cmdArgs.put(argName,args[i]);
-          }
-        }
-
-        command = subcmd;
-      }
       else {
-        if(command.isRoot()) {
-          throw new CrimException(Formatter.format(
-              "Invalid command/option: '{}'"
-              ,arg));
+        if(isForOptionRunner || hasOptionRunner || optionToRun != null) {
+          // Don't consume subcommand args if there's an option runner
+          //   because of "cmd1 cmd2 --help" with "cmd1 <args...>".
+          if((subcmd = cmd.commandTrie.find(arg)) != null) {
+            cmd = subcmd;
+          }
         }
         else {
-          throw new CrimException(Formatter.format(
-              "For command '{}', invalid command/option: '{}'"
-              ,command.buildFullName(root)
-              ,arg));
+          if(eatAllSubcmdArgs) {
+            cmdMultiArgs.add(arg);
+          }
+          else if(subcmdArgNames != null) {
+            cmdArgs.put(subcmdArgNames[subcmdArgNameIndex],arg);
+
+            if((++subcmdArgNameIndex) >= subcmdArgNames.length) {
+              // Reset.
+              subcmdArgNames = null;
+              subcmdArgNameIndex = 0;
+            }
+          }
+          else if((subcmd = cmd.commandTrie.find(arg)) != null) {
+            if(subcmd.isMultiArg) {
+              eatAllSubcmdArgs = true;
+            }
+            else if(subcmd.hasArgs()) {
+              if((i + subcmd.argNames.length) >= args.length) {
+                throw new CrimException(Formatter.format(
+                    "{} '{}' requires {} arg{}."
+                    ,buildExceptionSubcommandText(cmd)
+                    ,arg,subcmd.argNames.length
+                    ,(subcmd.argNames.length == 1) ? "" : 's'));
+              }
+
+              subcmdArgNames = subcmd.argNames;
+            }
+
+            cmd = subcmd;
+          }
+          else {
+            if(cmd.isRoot()) {
+              throw new CrimException(Formatter.format(
+                  "Invalid command/option: '{}'.",arg));
+            }
+            else {
+              throw new CrimException(Formatter.format(
+                  "For command '{}', invalid command/option: '{}'."
+                  ,cmd.buildFullName(root),arg));
+            }
+          }
         }
+      }
+    }
+
+    if(isForOptionRunner) {
+      return optionToRun != null;
+    }
+
+    // Check if have the required number of args, if there was no option runner.
+    if(optionToRun == null && subcmdArgNames != null
+        && subcmdArgNameIndex < subcmdArgNames.length) {
+      if(cmd.isRoot()) {
+        throw new CrimException(Formatter.format(
+            "Missing {} required arg{}."
+            ,subcmdArgNames.length
+            ,(subcmdArgNames.length == 1) ? "" : 's'));
+      }
+      else {
+        throw new CrimException(Formatter.format(
+            "Command '{}' requires {} arg{}."
+            ,cmd.buildFullName(root)
+            ,subcmdArgNames.length
+            ,(subcmdArgNames.length == 1) ? "" : 's'));
       }
     }
 
@@ -221,8 +317,8 @@ public class Crim {
       runner = optionToRun.runner;
     }
     else {
-      if(command.runner != null) {
-        runner = command.runner;
+      if(cmd.runner != null) {
+        runner = cmd.runner;
       }
       else {
         runner = root.runner;
@@ -232,8 +328,12 @@ public class Crim {
     // The runner might not be set, as the user is just setting the
     // initial skeleton for testing.
     if(runner != null) {
-      runner.run(this,command,cmdOpts,cmdArgs);
+      CommandData data = new CommandData(globalOpts,cmdOpts,cmdArgs,cmdMultiArgs);
+
+      runner.run(this,cmd,data);
     }
+
+    return optionToRun != null;
   }
 
   public void parseText(String text) {
@@ -287,9 +387,17 @@ public class Crim {
 
   public void showCommandUsage(Command command) {
     fansi.srintln("{title USAGE }");
-    fansi.srintln("  {cmd {} } {arg <options> <commands> }",command.buildFullName());
+    fansi.srint("  {cmd {} } {arg [<options>] }",command.buildFullName());
 
-    if(command.aliases != null && command.aliases.length > 0) {
+    if(command.argNames != null) {
+      for(String argName: command.argNames) {
+        fansi.srint(" {arg {} }",argName);
+      }
+    }
+
+    fansi.srintln(" {arg [<commands>] }");
+
+    if(command.hasAliases()) {
       fansi.println();
       fansi.srintln("  aliases: {cmd {} }",String.join(" ",command.aliases));
     }
@@ -339,23 +447,23 @@ public class Crim {
     int maxLen = 0;
     int index = 0;
 
-    for(Command sub: command.commands.values()) {
+    for(Command subcmd: command.commands.values()) {
       StringBuilder buffer = new StringBuilder();
-      int len = sub.name.length();
+      int len = subcmd.name.length();
 
-      buffer.append(fansi.style("{cmd {} }",sub.name));
+      buffer.append(fansi.style("{cmd {} }",subcmd.name));
 
-      if(sub.argNames != null && sub.argNames.length > 0) {
-        for(String argName: sub.argNames) {
+      if(subcmd.hasArgs()) {
+        for(String argName: subcmd.argNames) {
           buffer.append(' ').append(fansi.style("{arg {} }",argName));
           len += 1 + argName.length();
         }
       }
-      if(sub.aliases != null && sub.aliases.length > 0) {
+      if(subcmd.hasAliases()) {
         buffer.append(';');
         ++len;
 
-        for(String alias: sub.aliases) {
+        for(String alias: subcmd.aliases) {
           buffer.append(' ').append(fansi.style("{cmd {} }",alias));
           len += 1 + alias.length();
         }

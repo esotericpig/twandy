@@ -7,12 +7,12 @@ package tv.twitch.tandycakes;
 
 import com.esotericpig.jeso.botbuddy.BotBuddy;
 import tv.twitch.tandycakes.crim.Command;
+import tv.twitch.tandycakes.crim.CommandData;
 import tv.twitch.tandycakes.crim.Crim;
 import tv.twitch.tandycakes.error.CrimException;
 
 import java.awt.AWTException;
 import java.awt.Point;
-import java.util.Map;
 
 /**
  * @author Jonathan Bradley Whited
@@ -44,19 +44,27 @@ public class Twandy extends Crim {
 
     root.addAbout("{bold/white Tandy, have you had your cake today? }");
 
-    root.addCommand("x","Show coords of cursor",this::showCoords,"coords");
+    root.addCommand(Command.builder()
+        .name("x").alias("coords")
+        .summary("Show coords of cursor.")
+        .runner(this::showCoords));
 
-    Command playCmd = root.addCommand("play <game>",this::playGame);
-    playCmd.addSummary("Play a game:");
-    playCmd.addSummary("- solarus");
-    playCmd.addSummary("- lichess");
+    root.addCommand(Command.builder()
+        .name("play <game>")
+        .summary("Play a game:")
+        .summary("- solarus")
+        .summary("- lichess")
+        .runner(this::playGame));
 
-    root.addCommand("fhat","Run filtered chat",this::runFhat);
+    root.addCommand(Command.builder()
+        .name("fhat")
+        .summary("Run filtered chat.")
+        .runner(this::runFhat));
 
     addBasics();
   }
 
-  public void showCoords(Crim crim,Command cmd,Map<String,String> opts,Map<String,String> args) {
+  public void showCoords(Crim crim,Command cmd,CommandData data) {
     fansi.srintln("{bold/yellow");
     fansi.println("> Press enter to continue.");
     fansi.println("> Enter in any char to exit.");
@@ -77,8 +85,8 @@ public class Twandy extends Crim {
     fansi.println();
   }
 
-  public void playGame(Crim crim,Command cmd,Map<String,String> opts,Map<String,String> args) {
-    String gameArg = args.get("<game>");
+  public void playGame(Crim crim,Command cmd,CommandData data) {
+    String gameArg = data.args().get("<game>");
 
     if(gameArg == null || gameArg.isEmpty()) {
       throw new CrimException("No <game> arg.");
@@ -91,7 +99,7 @@ public class Twandy extends Crim {
       case "lichess" -> playLichess();
 
       default -> throw new CrimException(Formatter.format(
-          "Invalid <game> arg: '{}'",gameArg));
+          "Invalid <game> arg: '{}'.",gameArg));
     }
   }
 
@@ -101,7 +109,7 @@ public class Twandy extends Crim {
   public void playLichess() {
   }
 
-  public void runFhat(Crim crim,Command cmd,Map<String,String> opts,Map<String,String> args) {
+  public void runFhat(Crim crim,Command cmd,CommandData data) {
   }
 }
 
