@@ -11,29 +11,47 @@ Install **Java 16+** with [AdoptOpenJDK](https://adoptopenjdk.net), IntelliJ IDE
 
 (See commented-out code in [app/build.gradle](app/build.gradle) for automatically downloading this version of Java using Gradle.)
 
+### Build & Run
+
+The root-level Bash script, *twandy*, will build the Jar if it does not exist, and then run it. If the Jar already exists, it will not rebuild it.
+
+```
+$ ./twandy
+$ ./twandy --help
+```
+
+### Build
+
 Build the project (use `./gradlew.bat` for Windows):
 
 ```
 $ ./gradlew build
+$ ./gradlew.bat build
 ```
+
+### Run
 
 Run the app, using one of these methods:
 
 ```
+## 0) Use the root script.
+$ ./twandy
+
 ## 1) Use the Jar.
 $ java -jar app/build/libs/twandy.jar
 
-## 2) Use the script.
+## 2) Use the build script.
 $ app/build/install/twandy/bin/twandy
 $ app/build/install/twandy/bin/twandy.bat
 
-## 3) Use Gradle, but slow.
+## 3) Use Gradle, but slow (not recommended).
 $ ./gradlew run
+$ ./gradlew.bat run
 ```
 
 ## Usage
 
-Replace *twandy* with one of the run methods from the *Setup* section.
+Replace *twandy* with one of the run methods from the *Setup.Run* section.
 
 ```
 $ twandy --help

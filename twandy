@@ -1,0 +1,29 @@
+#!/bin/bash
+
+###
+# This file is part of Twandy.
+# Copyright (c) 2021 Jonathan Bradley Whited
+###
+
+
+# Exit if any command fails.
+set -e
+
+PROJECT_DIR='.'
+
+JAR_FILE="$PROJECT_DIR/app/build/libs/twandy.jar"
+GRADLEW_SCRIPT="$PROJECT_DIR/gradlew"
+
+
+if [ ! -f "$JAR_FILE" ]; then
+  # Show commands.
+  set -xv
+
+  # We only need the Jar, so try to build it as fast as possible.
+  "$GRADLEW_SCRIPT" jar -x check -x test --parallel
+
+  # Hide commands.
+  set +xv
+fi
+
+java -jar "$JAR_FILE" "$@"
