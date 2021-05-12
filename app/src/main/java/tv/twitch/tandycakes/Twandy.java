@@ -11,8 +11,8 @@ import tv.twitch.tandycakes.crim.CommandData;
 import tv.twitch.tandycakes.crim.Crim;
 import tv.twitch.tandycakes.error.CrimException;
 
-import java.awt.AWTException;
 import java.awt.Point;
+import java.util.Locale;
 
 /**
  * @author Jonathan Bradley Whited
@@ -39,9 +39,6 @@ public class Twandy extends Crim {
   public Twandy() {
     super("twandy","0.3.0");
 
-    this.gameArgValues.add("solarus");
-    this.gameArgValues.add("lichess");
-
     root.addAbout("{bold/white Tandy, have you had your cake today? }");
 
     root.addCommand(Command.builder()
@@ -55,6 +52,8 @@ public class Twandy extends Crim {
         .summary("- solarus")
         .summary("- lichess")
         .runner(this::playGame));
+    this.gameArgValues.add("solarus");
+    this.gameArgValues.add("lichess");
 
     root.addCommand(Command.builder()
         .name("fhat")
@@ -88,10 +87,11 @@ public class Twandy extends Crim {
   public void playGame(Crim crim,Command cmd,CommandData data) {
     String gameArg = data.args().get("<game>");
 
-    if(gameArg == null || gameArg.isEmpty()) {
+    if(gameArg == null || (gameArg = gameArg.strip()).isEmpty()) {
       throw new CrimException("No <game> arg.");
     }
 
+    gameArg = gameArg.toLowerCase(Locale.ROOT);
     String game = gameArgValues.find(gameArg,"");
 
     switch(game) {
@@ -136,28 +136,29 @@ game.onChatMessage((game,commands) {
 
  */
 
-// TODO: Fhat class
+// TODO: separate Fhat and Game?
 
+/*
 // TODO: parseChatMessage
 // TODO: onChatMessage( functional interface )
 // TODO: display of commands in onChatMessage
 // TODO: call beginSafeMode() in connect/run/start/whatever method
 class Game implements AutoCloseable {
   public final Fansi fansi;
-  public final BotBuddy bot;
   public final LinkedTrie<String> chatCommands = new LinkedTrie<>();
 
   public Game(Fansi fansi) throws AWTException {
     this.fansi = fansi;
-    this.bot = BotBuddy.builder()
-        .autoDelay(true)
-        .autoWaitForIdle(true)
-        .releaseMode(true)
-        .build();
   }
 
   public void play() {
     // TODO: test with just while-loop and stdin
+
+    BotBuddy bot = BotBuddy.builder()
+        .autoDelay(true)
+        .autoWaitForIdle(true)
+        .releaseMode(true)
+        .build();
   }
 
   @Override
@@ -170,3 +171,4 @@ class Game implements AutoCloseable {
     bot.setAutoDelay(autoDelay);
   }
 }
+*/
