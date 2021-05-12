@@ -12,7 +12,9 @@ import tv.twitch.tandycakes.crim.Crim;
 import tv.twitch.tandycakes.error.CrimException;
 
 import java.awt.Point;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * @author Jonathan Bradley Whited
@@ -34,7 +36,14 @@ public class Twandy extends Crim {
     }
   }
 
-  private final LinkedTrie<String> gameArgValues = new LinkedTrie<>();
+  private final Map<String,Runnable> gameNames = MapMaker.make(
+      new LinkedHashMap<>(),(map) -> {
+        // These must be lower-cased without spaces.
+        map.put("solarus",this::playSolarus);
+        map.put("lichess",this::playLichess);
+      });
+
+  private final LinkedTrie<String> gameNameTrie = new LinkedTrie<>();
 
   public Twandy() {
     super("twandy","0.3.0");
@@ -46,14 +55,15 @@ public class Twandy extends Crim {
         .summary("Show coords of cursor.")
         .runner(this::showCoords));
 
-    root.addCommand(Command.builder()
+    Command playCmd = root.addCommand(Command.builder()
         .name("play <game>")
         .summary("Play a game:")
-        .summary("- solarus")
-        .summary("- lichess")
         .runner(this::playGame));
-    this.gameArgValues.add("solarus");
-    this.gameArgValues.add("lichess");
+
+    for(String gameName: gameNames.keySet()) {
+      playCmd.addSummary("- " + gameName);
+      gameNameTrie.add(gameName);
+    }
 
     root.addCommand(Command.builder()
         .name("fhat")
@@ -92,21 +102,23 @@ public class Twandy extends Crim {
     }
 
     gameArg = gameArg.toLowerCase(Locale.ROOT);
-    String game = gameArgValues.find(gameArg,"");
 
-    switch(game) {
-      case "solarus" -> playSolarus();
-      case "lichess" -> playLichess();
+    String game = gameNameTrie.find(gameArg,"");
+    Runnable runner = gameNames.get(game);
 
-      default -> throw new CrimException(Formatter.format(
-          "Invalid <game> arg: '{}'.",gameArg));
+    if(runner == null) {
+      throw new CrimException(Formatter.format("Invalid <game> arg: '{}'.",gameArg));
     }
+
+    runner.run();
   }
 
   public void playSolarus() {
+    System.out.println("Playing solarus...");
   }
 
   public void playLichess() {
+    System.out.println("Playing lichess...");
   }
 
   public void runFhat(Crim crim,Command cmd,CommandData data) {
