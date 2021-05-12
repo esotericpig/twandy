@@ -51,7 +51,7 @@ $ ./gradlew.bat run
 
 ## Usage
 
-Replace *twandy* with one of the run methods from the *Setup.Run* section.
+Replace *twandy* with one of the run methods from the *Setup > Run* section.
 
 ```
 $ twandy --help
