@@ -107,7 +107,7 @@ public class Crim {
   }
 
   public void runHelpCommand(Crim crim,Command cmd,CommandData data) {
-    Command cmdToShow = root;
+    Command cmdToShow = crim.root;
 
     for(String multiArg: data.multiArgs()) {
       Command subcmd = cmdToShow.commandTrie.find(multiArg);
@@ -485,11 +485,17 @@ public class Crim {
       fansi.print("  "); // Indent.
       fansi.print(cmds[index]);
 
-      if(sub.summary.isEmpty()) {
+      List<String> summary = sub.summary;
+
+      if(summary.isEmpty()) {
+        summary = sub.about; // Try about instead.
+      }
+
+      if(summary.isEmpty()) {
         fansi.println();
       }
       else {
-        final Iterator<String> it = sub.summary.iterator();
+        final Iterator<String> it = summary.iterator();
 
         for(int len = (maxLen - lens[index]); len > 0; --len) {
           fansi.print(" ");
