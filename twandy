@@ -12,7 +12,7 @@ set -e
 PROJECT_DIR='.'
 
 JAR_FILE="$PROJECT_DIR/app/build/libs/twandy.jar"
-GRADLEW_SCRIPT="$PROJECT_DIR/gradlew"
+GRADLE="$PROJECT_DIR/gradlew"
 
 
 if [ ! -f "$JAR_FILE" ]; then
@@ -20,7 +20,7 @@ if [ ! -f "$JAR_FILE" ]; then
   set -xv
 
   # We only need the Jar, so try to build it as fast as possible.
-  "$GRADLEW_SCRIPT" jar -x check -x test --parallel
+  "$GRADLE" jar -x check -x test --parallel
 
   # Hide commands.
   set +xv
