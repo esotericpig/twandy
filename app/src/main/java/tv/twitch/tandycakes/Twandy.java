@@ -9,12 +9,14 @@ import com.esotericpig.jeso.botbuddy.BotBuddy;
 import tv.twitch.tandycakes.crim.Command;
 import tv.twitch.tandycakes.crim.CommandData;
 import tv.twitch.tandycakes.crim.Crim;
+import tv.twitch.tandycakes.crim.Option;
 import tv.twitch.tandycakes.error.CrimException;
 
 import java.awt.Point;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * @author Jonathan Bradley Whited
@@ -36,13 +38,13 @@ public class Twandy extends Crim {
     }
   }
 
-  private final Map<String,Runnable> gameNames = MapMaker.make(
+  // Java note: Runnable is also a functional interface.
+  private final Map<String,Consumer<CommandData>> gameNames = MapMaker.make(
       new LinkedHashMap<>(),(map) -> {
         // These must be lower-cased without spaces.
         map.put("solarus",this::playSolarus);
         map.put("lichess",this::playLichess);
       });
-
   private final LinkedTrie<String> gameNameTrie = new LinkedTrie<>();
 
   public Twandy() {
@@ -57,20 +59,20 @@ public class Twandy extends Crim {
 
     Command playCmd = root.addCommand(Command.builder()
         .name("play <game>")
-        .summary("Play a game:")
         .runner(this::playGame));
+
+    playCmd.addSummary("Play a game:");
 
     for(String gameName: gameNames.keySet()) {
       playCmd.addSummary("- " + gameName);
       gameNameTrie.add(gameName);
     }
 
-    root.addCommand(Command.builder()
-        .name("fhat")
-        .summary("Run filtered chat.")
-        .runner(this::runFhat));
+    playCmd.addOption(Option.builder()
+        .name("--fhat").alias("-f")
+        .summary("Run filtered chat."));
 
-    addBasics();
+    addDefaults();
   }
 
   public void showCoords(Crim crim,Command cmd,CommandData data) {
@@ -104,26 +106,25 @@ public class Twandy extends Crim {
     gameArg = gameArg.toLowerCase(Locale.ROOT);
 
     String game = gameNameTrie.find(gameArg,"");
-    Runnable runner = gameNames.get(game);
+    Consumer<CommandData> runner = gameNames.get(game);
 
     if(runner == null) {
       throw new CrimException(Formatter.format("Invalid <game> arg: '{}'.",gameArg));
     }
 
-    runner.run();
+    runner.accept(data);
   }
 
-  public void playSolarus() {
+  public void playSolarus(CommandData data) {
     System.out.println("Playing solarus...");
   }
 
-  public void playLichess() {
+  public void playLichess(CommandData data) {
     System.out.println("Playing lichess...");
   }
-
-  public void runFhat(Crim crim,Command cmd,CommandData data) {
-  }
 }
+
+// TODO: so I'm thinking GameData, Game(data), Fhat(data)
 
 /*
 
