@@ -24,6 +24,7 @@ public class Crim {
   // TODO: command/option groups? for visual use only
   // TODO: add "--no-opt" automatically for boolean "--opt" if request it?
   // TODO: change to use functional DSL, like Ruby?
+  // TODO: break out showCommand() into own class, like CrimParser? so can set/use different formatters
 
   public final Scanner stdin = new Scanner(System.in);
   public final Fansi fansi = new Fansi();
@@ -40,11 +41,13 @@ public class Crim {
   public Crim(String appName,String appVersion,String summary) {
     this.appName = appName;
     this.appVersion = appVersion;
-    this.root = Command.builder()
-        .name(appName).summary(summary).runner(this::runRootCommand).build();
+    this.root = Command.builder().name(appName).runner(this::runRootCommand).build();
     // Do NOT use this/root.addCommand().
-    this.globalOptions = Command.builder()
-        .parent(this.root).name("globalopts").build();
+    this.globalOptions = Command.builder().parent(this.root).name("globalopts").build();
+
+    if(summary != null) {
+      this.root.addSummary(summary);
+    }
 
     // Add our custom styles.
     this.fansi.storeStyleAlias("title","bold/red");
@@ -76,8 +79,7 @@ public class Crim {
 
   public Command addHelpCommand() {
     return root.addCommand(Command.builder()
-        .name("help")
-        .multiArg(true)
+        .name("help").multiArg(true)
         .summary("Help with a command.")
         .runner(this::runHelpCommand));
   }

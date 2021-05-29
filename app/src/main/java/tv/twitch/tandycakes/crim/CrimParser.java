@@ -63,6 +63,12 @@ public class CrimParser {
     this.globalOptions = globalOptions;
   }
 
+  /**
+   * <pre>
+   * Uses an instance method, instead of a static method, so that this can be
+   * converted to interface-style code one day so can set/use different parsers.
+   * </pre>
+   */
   public CommandRunner parse() {
     CommandRunner runner = parse(ParseFlag.FOR_OPT_RUNNER);
 
