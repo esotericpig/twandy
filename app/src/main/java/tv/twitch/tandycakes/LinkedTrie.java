@@ -57,8 +57,13 @@ public class LinkedTrie<V> {
     }
   }
 
-  public void addValueNameAndAlias(V value,String... aliases) {
+  public void addNameAndAlias(V value,String... aliases) {
     add(value);
+    addAlias(value,aliases);
+  }
+
+  public void addNameAndAlias(String name,V value,String... aliases) {
+    add(name,value);
     addAlias(value,aliases);
   }
 
@@ -94,8 +99,11 @@ public class LinkedTrie<V> {
       Node child = node.getChild(codePoint);
 
       if(child == null) {
-        if(allowLonger && node.getValue() != null) {
-          return node.getValue();
+        // If allowLonger and the partial to find is "helpme", but the only name
+        //   found is "help", then return the value of "help".
+        // This allows a user to be more verbose than necessary.
+        if(allowLonger && node.hasValue()) {
+          return node.getValueBag().value;
         }
         else {
           return defaultValue;
@@ -105,7 +113,12 @@ public class LinkedTrie<V> {
       node = child;
     }
 
-    while(node.getValue() == null) {
+    // If the partial to find is "ver" and the only name that starts with that
+    //   is "version", then return the value of "version".
+    while(node.hasNoValue()) {
+      // If there are 2 names that start with "ver", then just return the
+      //   default value, since it's ambiguous,
+      //   for example "version" and "verbose".
       if(node.children.size() != 1) {
         return defaultValue;
       }
@@ -113,7 +126,7 @@ public class LinkedTrie<V> {
       node = node.children.values().iterator().next();
     }
 
-    return (node.getValue() != null) ? node.getValue() : defaultValue;
+    return node.getValue(defaultValue);
   }
 
   public void setAllowLonger(boolean allowLonger) {
@@ -130,14 +143,14 @@ public class LinkedTrie<V> {
    */
   public class Node {
     private final Map<Integer,Node> children = new HashMap<>();
-    private final V value;
+    private final ValueBag valueBag;
 
     private Node() {
-      this(null);
+      this.valueBag = null;
     }
 
     private Node(V value) {
-      this.value = value;
+      this.valueBag = new ValueBag(value);
     }
 
     protected Node storeChild(Integer codePoint) {
@@ -151,7 +164,7 @@ public class LinkedTrie<V> {
     private Node storeChild(Integer codePoint,Node child) {
       Node thisChild = children.get(codePoint);
 
-      if(thisChild == null || (thisChild.value == null && child.value != null)) {
+      if(thisChild == null || (thisChild.valueBag == null && child.valueBag != null)) {
         children.put(codePoint,child);
         thisChild = child;
       }
@@ -164,7 +177,35 @@ public class LinkedTrie<V> {
     }
 
     public V getValue() {
-      return value;
+      return getValue(null);
+    }
+
+    public V getValue(V defaultValue) {
+      return (valueBag != null) ? valueBag.value : defaultValue;
+    }
+
+    public boolean hasValue() {
+      return valueBag != null;
+    }
+
+    public boolean hasNoValue() {
+      return valueBag == null;
+    }
+
+    public ValueBag getValueBag() {
+      return valueBag;
+    }
+  }
+
+  /**
+   * @author Jonathan Bradley Whited
+   * @since 1.0.0
+   */
+  public class ValueBag {
+    public final V value;
+
+    public ValueBag(V value) {
+      this.value = value;
     }
   }
 }
