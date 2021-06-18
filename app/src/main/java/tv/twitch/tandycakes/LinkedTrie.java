@@ -86,7 +86,7 @@ public class LinkedTrie<V> {
   }
 
   public V find(String partial,V defaultValue,boolean allowLonger) {
-    if(partial == null) {
+    if(partial == null || partial.isEmpty()) {
       return defaultValue;
     }
 
