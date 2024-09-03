@@ -20,7 +20,6 @@ import java.util.function.Consumer;
 
 /**
  * @author Jonathan Bradley Whited
- * @since 1.0.0
  */
 public class Twandy extends Crim {
   // TODO: twitch channel where can decide what youtube video to play
@@ -78,14 +77,18 @@ public class Twandy extends Crim {
   public void showCoords(Crim crim,Command cmd,CommandData data) {
     fansi.srintln("{bold/yellow");
     fansi.println("> Press enter to continue.");
-    fansi.println("> Enter in any char to exit.");
+    fansi.println("> Input any char to exit.");
     fansi.srintln("}");
+
+    String numPrefix = " #";
 
     for(int i = 1; ; ++i) {
       Point coords = BotBuddy.getCoords();
 
-      fansi.srintf("#{bold/btWhite %d }: ( x: {bold/btBlue %4d }, y: {bold/btBlue %4d } )"
-          ,i,coords.x,coords.y);
+      if(i == 10) { numPrefix = "#"; }
+
+      fansi.srintf(" %s{bold/btWhite %d }: ( x: {bold/btBlue %4d }, y: {bold/btBlue %4d } )"
+          ,numPrefix,i,coords.x,coords.y);
       String input = stdin.nextLine();
 
       if(!input.isEmpty()) {
