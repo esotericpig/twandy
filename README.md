@@ -7,51 +7,51 @@ Twitch bot for playing games.
 
 ## Setup
 
-Install **Java 16+** with [AdoptOpenJDK](https://adoptopenjdk.net), IntelliJ IDEA, or [SDKMAN!](https://sdkman.io).
+Install **Java 17+** from [Adoptium](https://adoptium.net) or with [SDKMAN!](https://sdkman.io) or whatever.
 
-(See commented-out code in [app/build.gradle](app/build.gradle) for automatically downloading this version of Java using Gradle.)
+TODO: Download Release and run.
 
-### Build & Run
+## Build
 
-The root-level Bash script, *twandy*, will build the Jar if it does not exist, and then run it. If the Jar already exists, it will not rebuild it.
+Install **Java 17+** and **Gradle v8.10+** with [SDKMAN!](https://sdkman.io) or whatever.
+
+The root-level Bash script, [twandy](twandy), will build the Jar (as fast as possible) if it doesn't exist, and then run it. If the Jar already exists, it will not rebuild it.
 
 ```
 $ ./twandy
 $ ./twandy --help
 ```
 
-### Build
-
-Build the project (use `./gradlew.bat` for Windows):
+Or build manually (use `./gradlew.bat` on Windows):
 
 ```
 $ ./gradlew build
-$ ./gradlew.bat build
 ```
 
-### Run
+The `twandy` script uses `./gradlew` if it exists, else it uses `gradle`. So if you don't want `twandy` to use `./gradlew`, just delete `./gradlew`.
 
-Run the app, using one of these methods:
+## Run
+
+Run the app using one of these methods:
 
 ```
-## 0) Use the root script.
+## 0) Use the top-level script.
 $ ./twandy
 
 ## 1) Use the Jar.
 $ java -jar app/build/libs/twandy.jar
 
-## 2) Use the build script.
+## 2) Use one of the build scripts.
 $ app/build/install/twandy/bin/twandy
 $ app/build/install/twandy/bin/twandy.bat
 
-## 3) Use Gradle, but slow (not recommended).
+## 3) Use Gradle.
 $ ./gradlew run
-$ ./gradlew.bat run
 ```
 
 ## Usage
 
-Replace *twandy* with one of the run methods from the *Setup > Run* section.
+These examples use the `twandy` script, but any of the other running methods will also work with these same options/commands.
 
 ```
 $ twandy --help

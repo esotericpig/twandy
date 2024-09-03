@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * For efficiency, could add an internal HashMap, but no need.
+ *
  * @author Jonathan Bradley Whited
  * @since 1.0.0
  */

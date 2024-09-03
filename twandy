@@ -1,21 +1,24 @@
 #!/bin/bash
+set -euo pipefail
+IFS=$'\n\t'
 
 ###
-# This file is part of Twandy.
-# Copyright (c) 2021 Jonathan Bradley Whited
+# - https://www.gnu.org/software/bash/manual/html_node/Bash-Conditional-Expressions.html
+#
+# @version 1.1.0
 ###
-
-
-# Exit if any command fails.
-set -e
 
 PROJECT_DIR='.'
 
 JAR_FILE="$PROJECT_DIR/app/build/libs/twandy.jar"
-GRADLE="$PROJECT_DIR/gradlew"
 
+if [[ -s "$PROJECT_DIR/gradlew" ]]; then
+  GRADLE="$PROJECT_DIR/gradlew"
+else
+  GRADLE="gradle"
+fi
 
-if [ ! -f "$JAR_FILE" ]; then
+if [[ ! -s "$JAR_FILE" ]]; then
   # Show commands.
   set -xv
 
