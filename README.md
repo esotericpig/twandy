@@ -7,54 +7,56 @@ Twitch bot for playing games.
 
 ## Setup
 
-Install **Java 17+** from [Adoptium](https://adoptium.net) or with [SDKMAN!](https://sdkman.io) or whatever.
+Install **Java 17+** (e.g., with [Adoptium](https://adoptium.net) or [SDKMAN!](https://sdkman.io)).
 
 TODO: Download Release and run.
 
 ## Build
 
-Install **Java 17+** and **Gradle v8.10+** with [SDKMAN!](https://sdkman.io) or whatever.
+Install **Java 17+** and **Gradle v8.10+** (e.g., with [SDKMAN!](https://sdkman.io)).
 
-The root-level Bash script, [twandy](twandy), will build the Jar (as fast as possible) if it doesn't exist, and then run it. If the Jar already exists, it will not rebuild it.
+The root-level Bash script, [twandy](twandy), will build the Jar (as fast as possible) if it doesn't exist and then run it.
 
-```
-$ ./twandy
-$ ./twandy --help
+- If the Jar already exists, it will not rebuild it, unless you specify the `/b` option.
+- It uses `./gradlew` if it exists, else it uses `gradle`. If you don't want it to use `./gradlew`, then specify the `/g` option or just delete `./gradlew`.
+- Slashes (`/`) are used instead of dashes so that it doesn't conflict with Twandy's options.
+
+```bash
+./twandy
+./twandy /b /g --version
 ```
 
 Or build manually (use `./gradlew.bat` on Windows):
 
+```bash
+./gradlew build
 ```
-$ ./gradlew build
-```
-
-The `twandy` script uses `./gradlew` if it exists, else it uses `gradle`. So if you don't want `twandy` to use `./gradlew`, just delete `./gradlew`.
 
 ## Run
 
 Run the app using one of these methods:
 
-```
+```bash
 ## 0) Use the top-level script.
-$ ./twandy
+./twandy
 
 ## 1) Use the Jar.
-$ java -jar app/build/libs/twandy.jar
+java -jar app/build/libs/twandy.jar
 
 ## 2) Use one of the build scripts.
-$ app/build/install/twandy/bin/twandy
-$ app/build/install/twandy/bin/twandy.bat
+app/build/install/twandy/bin/twandy
+app/build/install/twandy/bin/twandy.bat
 
 ## 3) Use Gradle.
-$ ./gradlew run
+./gradlew run
 ```
 
 ## Usage
 
 These examples use the `twandy` script, but any of the other running methods will also work with these same options/commands.
 
-```
-$ twandy --help
+```bash
+twandy --help
 ```
 
 TODO: user/pass

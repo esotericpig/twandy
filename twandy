@@ -5,20 +5,33 @@ IFS=$'\n\t'
 ###
 # - https://www.gnu.org/software/bash/manual/html_node/Bash-Conditional-Expressions.html
 #
-# @version 1.1.0
+# @version 1.1.1
 ###
 
-PROJECT_DIR='.'
-
+PROJECT_DIR="$(dirname "$0")"
 JAR_FILE="$PROJECT_DIR/app/build/libs/twandy.jar"
 
-if [[ -s "$PROJECT_DIR/gradlew" ]]; then
+is_build=0
+is_gradlew=1
+jar_args=()
+
+for arg in "$@"; do
+  if [[ "$arg" = '/b' ]]; then
+    is_build=1
+  elif [[ "$arg" = '/g' ]]; then
+    is_gradlew=0
+  else
+    jar_args+=("$arg")
+  fi
+done
+
+if [[ "$is_gradlew" -eq 1 && -s "$PROJECT_DIR/gradlew" ]]; then
   GRADLE="$PROJECT_DIR/gradlew"
 else
   GRADLE="gradle"
 fi
 
-if [[ ! -s "$JAR_FILE" ]]; then
+if [[ "$is_build" -eq 1 || ! -s "$JAR_FILE" ]]; then
   # Show commands.
   set -xv
 
@@ -27,6 +40,7 @@ if [[ ! -s "$JAR_FILE" ]]; then
 
   # Hide commands.
   set +xv
+  printf -- "---\n\n\n"
 fi
 
-java -jar "$JAR_FILE" "$@"
+exec java -jar "$JAR_FILE" "${jar_args[@]}"
