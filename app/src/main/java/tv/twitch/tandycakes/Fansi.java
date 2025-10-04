@@ -1,6 +1,6 @@
 /*
  * This file is part of Twandy.
- * Copyright (c) 2021 Jonathan Bradley Whited
+ * Copyright (c) 2021 Bradley Whited
  */
 
 package tv.twitch.tandycakes;
@@ -12,10 +12,6 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Locale;
 
-/**
- * @author Jonathan Bradley Whited
- * @since 1.0.0
- */
 public class Fansi {
   public static final String RESET = "\u001b[0m";
 

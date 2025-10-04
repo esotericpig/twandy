@@ -1,6 +1,6 @@
 /*
  * This file is part of Twandy.
- * Copyright (c) 2021 Jonathan Bradley Whited
+ * Copyright (c) 2021 Bradley Whited
  */
 
 package tv.twitch.tandycakes.crim;
@@ -8,30 +8,28 @@ package tv.twitch.tandycakes.crim;
 import tv.twitch.tandycakes.Formatter;
 import tv.twitch.tandycakes.LinkedTrie;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
-/**
- * @author Jonathan Bradley Whited
- * @since 1.0.0
- */
 public class Command {
   public static final Pattern ARG_PATTERN = Pattern.compile("\\s+");
 
-  public final Command parent;
-  public CommandRunner runner;
+  // NOTE: Must be after all other static vars.
+  public static final Command EMPTY = new Command("__EMPTY__");
+
+  public CommandRunner runner = null;
 
   public final String name;
   public final String[] aliases;
   public final String[] argNames;
-  public final boolean isMultiArg;
+  public boolean isMultiArg = false;
 
   public final List<String> summary = new LinkedList<>();
   public final List<String> about = new LinkedList<>();
@@ -39,84 +37,96 @@ public class Command {
   public final Map<String,Option> options = new LinkedHashMap<>();
   public final LinkedTrie<Option> optionTrie = new LinkedTrie<>(false);
 
-  public final Map<String,Command> commands = new LinkedHashMap<>();
-  public final LinkedTrie<Command> commandTrie = new LinkedTrie<>();
+  public final Map<String,Command> subcommands = new LinkedHashMap<>();
+  public final LinkedTrie<Command> subcommandTrie = new LinkedTrie<>();
 
-  public static Builder builder() {
-    return new Builder();
-  }
+  private Command parent = null;
 
   public static String[] split(String cmdAndArgs) {
     return ARG_PATTERN.split(cmdAndArgs);
   }
 
-  private Command(Builder builder) {
-    if(builder.name == null) {
+  public Command(String name,String... aliases) {
+    if(name == null) {
       throw new IllegalArgumentException("Null name.");
     }
-    if(builder.aliases == null) {
-      throw new IllegalArgumentException("Null aliases.");
-    }
 
-    builder.name = builder.name.strip();
+    name = name.strip();
 
-    if(builder.name.isEmpty()) {
+    if(name.isEmpty()) {
       throw new IllegalArgumentException("Empty name.");
     }
 
-    this.parent = builder.parent;
-    this.runner = builder.runner;
-    this.aliases = builder.aliases.toArray(new String[0]);
-    this.isMultiArg = builder.isMultiArg;
+    this.aliases = Arrays.copyOf(aliases,aliases.length);
 
-    Matcher matcher = ARG_PATTERN.matcher(builder.name);
+    var matcher = ARG_PATTERN.matcher(name);
     int argsIndex = matcher.find() ? matcher.end() : -1;
 
     if(argsIndex < 0) {
-      this.name = builder.name;
+      this.name = name;
       this.argNames = null;
     }
     else {
-      // Store in this.name instead of builder.name, for this.argNames.
-      this.name = builder.name.substring(0,matcher.start());
+      this.name = name.substring(0,matcher.start());
 
       if(this.name.isEmpty()) {
         throw new IllegalArgumentException("Empty name with args.");
       }
 
-      this.argNames = split(builder.name.substring(argsIndex));
-    }
-
-    if(builder.summary != null) {
-      this.summary.addAll(builder.summary);
-    }
-    if(builder.about != null) {
-      this.about.addAll(builder.about);
+      this.argNames = split(name.substring(argsIndex));
     }
   }
 
-  public Command addSummary(String line) {
+  public Command parent(Command parent) {
+    if(parent == null) {
+      throw new IllegalArgumentException("Null parent.");
+    }
+
+    this.parent = parent;
+    return this;
+  }
+
+  public Command runner(CommandRunner runner) {
+    this.runner = runner;
+    return this;
+  }
+
+  public Command multiArg() {
+    isMultiArg = true;
+    return this;
+  }
+
+  public Command singleArg() {
+    isMultiArg = false;
+    return this;
+  }
+
+  public Command summary(String line) {
     summary.add(line);
     return this;
   }
 
-  public Command addSummary(String... lines) {
+  public Command summary(String... lines) {
     Collections.addAll(summary,lines);
     return this;
   }
 
-  public Command addAbout(String line) {
+  public Command about(String line) {
     about.add(line);
     return this;
   }
 
-  public Command addAbout(String... lines) {
+  public Command about(String... lines) {
     Collections.addAll(about,lines);
     return this;
   }
 
-  public Option addOption(Option.Builder builder) {
-    Option option = builder.build();
+  public Option option(String name) {
+    return option(name,null);
+  }
+
+  public Option option(String name,String alias) {
+    var option = new Option(name,alias).parent(this);
 
     if(options.containsKey(option.name)) {
       throw new IllegalArgumentException(Formatter.format("Duplicate option: '{}'.",option.name));
@@ -132,21 +142,30 @@ public class Command {
     return option;
   }
 
-  public Command addCommand(Command.Builder builder) {
-    Command command = builder.parent(this).build();
+  public Command command(String name,String... aliases) {
+    var sub = new Command(name,aliases).parent(this);
 
-    if(commands.containsKey(command.name)) {
-      throw new IllegalArgumentException(Formatter.format("Duplicate command: '{}'.",command.name));
+    if(subcommands.containsKey(sub.name)) {
+      throw new IllegalArgumentException(Formatter.format("Duplicate command: '{}'.",sub.name));
     }
 
-    commands.put(command.name,command);
-    commandTrie.add(command.name,command);
+    subcommands.put(sub.name,sub);
+    subcommandTrie.add(sub.name,sub);
 
-    if(command.hasAliases()) {
-      commandTrie.addAlias(command,command.aliases);
+    if(sub.hasAliases()) {
+      subcommandTrie.addAlias(sub,sub.aliases);
     }
 
-    return command;
+    return sub;
+  }
+
+  public Command tap(Consumer<Command> tapper) {
+    tapper.accept(this);
+    return this;
+  }
+
+  public Command end() {
+    return (parent != null) ? parent : this;
   }
 
   public String buildFullName() {
@@ -156,8 +175,8 @@ public class Command {
   public String buildFullName(Command commandToStopBefore) {
     Deque<String> names = new LinkedList<>();
 
-    for(Command command = this; command != commandToStopBefore; command = command.parent) {
-      names.addFirst(command.name);
+    for(var top = this; top != null && top != commandToStopBefore; top = top.parent) {
+      names.addFirst(top.name);
     }
 
     return String.join(" ",names);
@@ -173,74 +192,5 @@ public class Command {
 
   public boolean hasArgs() {
     return argNames != null && argNames.length > 0;
-  }
-
-  public static class Builder {
-    public Command parent = null;
-    public CommandRunner runner = null;
-
-    public String name = null;
-    public List<String> aliases = new ArrayList<>();
-    public boolean isMultiArg = false;
-
-    public List<String> summary = new LinkedList<>();
-    public List<String> about = new LinkedList<>();
-
-    private Builder() {
-    }
-
-    public Command build() {
-      return new Command(this);
-    }
-
-    public Builder parent(Command parent) {
-      this.parent = parent;
-      return this;
-    }
-
-    public Builder runner(CommandRunner runner) {
-      this.runner = runner;
-      return this;
-    }
-
-    public Builder name(String name) {
-      this.name = name;
-      return this;
-    }
-
-    public Builder alias(String alias) {
-      this.aliases.add(alias);
-      return this;
-    }
-
-    public Builder alias(String... aliases) {
-      Collections.addAll(this.aliases,aliases);
-      return this;
-    }
-
-    public Builder multiArg(boolean multiArg) {
-      this.isMultiArg = multiArg;
-      return this;
-    }
-
-    public Builder summary(String line) {
-      this.summary.add(line);
-      return this;
-    }
-
-    public Builder summary(String... lines) {
-      Collections.addAll(this.summary,lines);
-      return this;
-    }
-
-    public Builder about(String line) {
-      this.about.add(line);
-      return this;
-    }
-
-    public Builder about(String... lines) {
-      Collections.addAll(this.about,lines);
-      return this;
-    }
   }
 }

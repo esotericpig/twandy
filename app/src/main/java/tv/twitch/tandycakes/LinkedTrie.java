@@ -1,6 +1,6 @@
 /*
  * This file is part of Twandy.
- * Copyright (c) 2021 Jonathan Bradley Whited
+ * Copyright (c) 2021 Bradley Whited
  */
 
 package tv.twitch.tandycakes;
@@ -10,9 +10,6 @@ import java.util.Map;
 
 /**
  * For efficiency, could add an internal HashMap, but no need.
- *
- * @author Jonathan Bradley Whited
- * @since 1.0.0
  */
 public class LinkedTrie<V> {
   private final Node rootNode = new Node();
@@ -139,10 +136,6 @@ public class LinkedTrie<V> {
     return allowLonger;
   }
 
-  /**
-   * @author Jonathan Bradley Whited
-   * @since 1.0.0
-   */
   public class Node {
     private final Map<Integer,Node> children = new HashMap<>();
     private final ValueBag valueBag;
@@ -199,10 +192,6 @@ public class LinkedTrie<V> {
     }
   }
 
-  /**
-   * @author Jonathan Bradley Whited
-   * @since 1.0.0
-   */
   public class ValueBag {
     public final V value;
 

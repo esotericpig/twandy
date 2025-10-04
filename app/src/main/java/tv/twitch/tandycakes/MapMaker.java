@@ -1,6 +1,6 @@
 /*
  * This file is part of twandy.
- * Copyright (c) 2021 Jonathan Bradley Whited
+ * Copyright (c) 2021 Bradley Whited
  */
 
 package tv.twitch.tandycakes;
@@ -12,9 +12,6 @@ import java.util.Map;
  * Completely unnecessary, as an instance initialization block is better,
  * but made it for fun.
  * </pre>
- *
- * @author Jonathan Bradley Whited
- * @since 1.0.0
  */
 @FunctionalInterface
 public interface MapMaker<M> {

@@ -1,6 +1,6 @@
 /*
  * This file is part of Twandy.
- * Copyright (c) 2021 Jonathan Bradley Whited
+ * Copyright (c) 2021 Bradley Whited
  */
 
 package tv.twitch.tandycakes.crim;
@@ -16,9 +16,6 @@ import java.util.Scanner;
  * This isn't perfect, has some problems, but it's a good experiment for a
  * potential, future library.
  * </pre>
- *
- * @author Jonathan Bradley Whited
- * @since 1.0.0
  */
 public class Crim {
   // TODO: command/option groups? for visual use only
@@ -41,12 +38,12 @@ public class Crim {
   public Crim(String appName,String appVersion,String summary) {
     this.appName = appName;
     this.appVersion = appVersion;
-    this.root = Command.builder().name(appName).runner(this::runRootCommand).build();
-    // Do NOT use this/root.addCommand().
-    this.globalOptions = Command.builder().parent(this.root).name("globalopts").build();
+    this.root = new Command(appName).runner(this::runRootCommand);
+    // NOTE: Do NOT use this/root.addCommand().
+    this.globalOptions = new Command("__GLOBAL_OPTIONS__").parent(this.root);
 
     if(summary != null) {
-      this.root.addSummary(summary);
+      this.root.summary(summary);
     }
 
     // Add our custom styles.
@@ -64,24 +61,22 @@ public class Crim {
   }
 
   public Option addHelpGlobalOption() {
-    return globalOptions.addOption(Option.builder()
-        .name("--help").alias("-h")
-        .summary("Show this help.")
-        .runner(this::runHelpGlobalOption));
+    return globalOptions.option("--help","-h")
+                        .summary("Show this help.")
+                        .runner(this::runHelpGlobalOption);
   }
 
   public Option addVersionOption() {
-    return root.addOption(Option.builder()
-        .name("--version").alias("-v")
-        .summary("Show version.")
-        .runner(this::runVersionOption));
+    return root.option("--version","-v")
+               .summary("Show version.")
+               .runner(this::runVersionOption);
   }
 
   public Command addHelpCommand() {
-    return root.addCommand(Command.builder()
-        .name("help").multiArg(true)
-        .summary("Help with a command.")
-        .runner(this::runHelpCommand));
+    return root.command("help [commands]")
+               .multiArg()
+               .summary("Help with a command.")
+               .runner(this::runHelpCommand);
   }
 
   public void runRootCommand(Crim crim,Command cmd,CommandData data) {
@@ -100,10 +95,11 @@ public class Crim {
     Command cmdToShow = crim.root;
 
     for(String multiArg: data.multiArgs()) {
-      Command subcmd = cmdToShow.commandTrie.find(multiArg);
+      Command bottom = cmdToShow.subcommandTrie.find(multiArg);
 
-      if(subcmd != null) {
-        cmdToShow = subcmd;
+      if(bottom != null) {
+        cmdToShow = bottom;
+        // Don't break, as we want the last command.
       }
     }
 
@@ -125,21 +121,19 @@ public class Crim {
     showHelp(root);
   }
 
-  public void showHelp(String errorMessage) {
-    showHelp(root,errorMessage);
-  }
-
   public void showHelp(Command command) {
-    showHelp(command,null);
+    showCommand(command);
   }
 
-  public void showHelp(Command command,String errorMessage) {
-    showCommand(command);
+  public void showHelpAndError(String errorMessage) {
+    showHelpAndError(root,errorMessage);
+  }
 
-    if(errorMessage != null) {
-      fansi.srintln();
-      fansi.srintln("{err ERROR }: {}",errorMessage);
-    }
+  public void showHelpAndError(Command command,String errorMessage) {
+    showHelp(command);
+
+    fansi.srintln();
+    fansi.srintln("{err ERROR }: {}",(errorMessage != null) ? errorMessage : "Unknown error.");
   }
 
   public void showCommand(Command command) {
@@ -193,7 +187,7 @@ public class Crim {
   }
 
   public boolean showCommandSubcommands(Command command,boolean printNewline) {
-    if(command.commands.isEmpty()) {
+    if(command.subcommands.isEmpty()) {
       return printNewline;
     }
 
@@ -207,34 +201,34 @@ public class Crim {
       fansi.srintln("{title SUBCOMMANDS }");
     }
 
-    final String[] cmds = new String[command.commands.size()];
-    final int[] lens = new int[command.commands.size()];
+    final String[] subs = new String[command.subcommands.size()];
+    final int[] lens = new int[command.subcommands.size()];
     int maxLen = 0;
     int index = 0;
 
-    for(Command subcmd: command.commands.values()) {
+    for(Command sub: command.subcommands.values()) {
       StringBuilder buffer = new StringBuilder();
-      int len = subcmd.name.length();
+      int len = sub.name.length();
 
-      buffer.append(fansi.style("{cmd {} }",subcmd.name));
+      buffer.append(fansi.style("{cmd {} }",sub.name));
 
-      if(subcmd.hasArgs()) {
-        for(String argName: subcmd.argNames) {
+      if(sub.hasArgs()) {
+        for(String argName: sub.argNames) {
           buffer.append(' ').append(fansi.style("{arg {} }",argName));
           len += 1 + argName.length();
         }
       }
-      if(subcmd.hasAliases()) {
+      if(sub.hasAliases()) {
         buffer.append(';');
         ++len;
 
-        for(String alias: subcmd.aliases) {
+        for(String alias: sub.aliases) {
           buffer.append(' ').append(fansi.style("{cmd {} }",alias));
           len += 1 + alias.length();
         }
       }
 
-      cmds[index] = buffer.toString();
+      subs[index] = buffer.toString();
       lens[index] = len;
       ++index;
 
@@ -246,9 +240,9 @@ public class Crim {
     maxLen += 4; // Indent summary; '%s' also can't be 0.
     index = 0;
 
-    for(Command sub: command.commands.values()) {
+    for(Command sub: command.subcommands.values()) {
       fansi.print("  "); // Indent.
-      fansi.print(cmds[index]);
+      fansi.print(subs[index]);
 
       List<String> summary = sub.summary;
 

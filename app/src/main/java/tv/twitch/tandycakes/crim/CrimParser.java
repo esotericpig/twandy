@@ -1,6 +1,6 @@
 /*
  * This file is part of Twandy.
- * Copyright (c) 2021 Jonathan Bradley Whited
+ * Copyright (c) 2021 Bradley Whited
  */
 
 package tv.twitch.tandycakes.crim;
@@ -21,9 +21,6 @@ import java.util.Map;
  * It's still kind of bad now as O(2n), but the Runner logic kind of forces
  * that at the moment.
  * </pre>
- *
- * @author Jonathan Bradley Whited
- * @since 1.0.0
  */
 public class CrimParser {
   // TODO: parse any opt/arg/cmd prefixed with "-" or "--" as an opt?
@@ -91,7 +88,7 @@ public class CrimParser {
       String optionName = parts[0];
       String optionArg = (parts.length == 2) ? parts[1] : null;
 
-      Option option = null;
+      Option option;
 
       // First, current command's local options.
       if((option = command.optionTrie.find(optionName)) != null) {
@@ -134,15 +131,15 @@ public class CrimParser {
       }
 
       // Lastly, args/subcommands.
-      Command subcommand = null;
+      Command sub;
 
       if(flag == ParseFlag.FOR_OPT_RUNNER || flag == ParseFlag.HAS_OPT_RUNNER
           || optionToRun != null) {
         // Don't consume subcommand args if there's an option runner
         //   because of "cmd1 cmd2 --help" with "cmd1 <mainArgs...>".
-        if((subcommand = command.commandTrie.find(mainArg)) != null) {
+        if((sub = command.subcommandTrie.find(mainArg)) != null) {
           parentCommands.addFirst(command);
-          command = subcommand;
+          command = sub;
         }
       }
       else {
@@ -158,16 +155,16 @@ public class CrimParser {
             commandArgNamesIndex = 0;
           }
         }
-        else if((subcommand = command.commandTrie.find(mainArg)) != null) {
-          if(subcommand.isMultiArg) {
+        else if((sub = command.subcommandTrie.find(mainArg)) != null) {
+          if(sub.isMultiArg) {
             eatAllCommandArgs = true;
           }
-          else if(subcommand.hasArgs()) {
-            commandArgNames = subcommand.argNames;
+          else if(sub.hasArgs()) {
+            commandArgNames = sub.argNames;
           }
 
           parentCommands.addFirst(command);
-          command = subcommand;
+          command = sub;
         }
         else {
           if(command.isRoot()) {
@@ -206,7 +203,7 @@ public class CrimParser {
       }
     }
 
-    CommandRunner runner = null;
+    CommandRunner runner;
 
     // Option runners supersede command runners.
     // For example, "--version" should show the version, not run the command.

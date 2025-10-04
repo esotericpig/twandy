@@ -70,7 +70,7 @@ TODO: run fhat
 [GNU LGPL v3+](COPYING.LESSER)
 
 > Twandy [<https://github.com/esotericpig/twandy>]  
-> Copyright (c) 2021 Jonathan Bradley Whited  
+> Copyright (c) 2021 Bradley Whited  
 >
 > Twandy is free software: you can redistribute it and/or modify  
 > it under the terms of the GNU Lesser General Public License as published by  

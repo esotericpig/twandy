@@ -1,6 +1,6 @@
 /*
  * This file is part of Twandy.
- * Copyright (c) 2021 Jonathan Bradley Whited
+ * Copyright (c) 2021 Bradley Whited
  */
 
 package tv.twitch.tandycakes;
@@ -9,7 +9,6 @@ import com.esotericpig.jeso.botbuddy.BotBuddy;
 import tv.twitch.tandycakes.crim.Command;
 import tv.twitch.tandycakes.crim.CommandData;
 import tv.twitch.tandycakes.crim.Crim;
-import tv.twitch.tandycakes.crim.Option;
 import tv.twitch.tandycakes.error.CrimException;
 
 import java.awt.Point;
@@ -18,9 +17,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * @author Jonathan Bradley Whited
- */
 public class Twandy extends Crim {
   // TODO: twitch channel where can decide what youtube video to play
   // TODO: play "hello <username>" audio text-to-speech when someone enters (after 5min)
@@ -32,8 +28,7 @@ public class Twandy extends Crim {
       twandy.parse(args);
     }
     catch(CrimException e) {
-      // Concat to empty string, in case null.
-      twandy.showHelp("" + e.getLocalizedMessage());
+      twandy.showHelpAndError(e.getLocalizedMessage());
     }
   }
 
@@ -49,27 +44,24 @@ public class Twandy extends Crim {
   public Twandy() {
     super("twandy","0.3.0");
 
-    root.addAbout("{bold/white Tandy, have you had your cake today? }");
+    root.about("{bold/white Tandy, have you had your cake today? }");
 
-    root.addCommand(Command.builder()
-        .name("x").alias("coords")
+    root.command("x","coords")
         .summary("Show coords of cursor.")
-        .runner(this::showCoords));
+        .runner(this::showCoords);
 
-    Command playCmd = root.addCommand(Command.builder()
-        .name("play <game>")
-        .runner(this::playGame));
-
-    playCmd.addSummary("Play a game:");
-
-    for(String gameName: gameNames.keySet()) {
-      playCmd.addSummary("- " + gameName);
-      gameNameTrie.add(gameName);
-    }
-
-    playCmd.addOption(Option.builder()
-        .name("--fhat").alias("-f")
-        .summary("Run filtered chat."));
+    root.command("play <game>")
+        .summary("Play a game:")
+        .tap((var cmd) -> {
+          for(var gameName : gameNames.keySet()) {
+            cmd.summary("- " + gameName);
+            gameNameTrie.add(gameName);
+          }
+        })
+        .option("--fhat","-f")
+          .summary("Run filtered chat.")
+          .end()
+        .runner(this::playGame);
 
     addDefaults();
   }

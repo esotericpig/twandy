@@ -1,14 +1,10 @@
 /*
  * This file is part of Twandy.
- * Copyright (c) 2021 Jonathan Bradley Whited
+ * Copyright (c) 2021 Bradley Whited
  */
 
 package tv.twitch.tandycakes;
 
-/**
- * @author Jonathan Bradley Whited
- * @since 1.0.0
- */
 public class Formatter {
   private Formatter() {
     throw new UnsupportedOperationException("Not allowed to construct.");

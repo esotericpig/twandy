@@ -1,6 +1,6 @@
 /*
  * This file is part of Twandy.
- * Copyright (c) 2021 Jonathan Bradley Whited
+ * Copyright (c) 2021 Bradley Whited
  */
 
 package tv.twitch.tandycakes.crim;
@@ -12,11 +12,8 @@ import java.util.Map;
 
 /**
  * <pre>
- * Wow, I've used a record, so cool, Java 14+. Are you happy now?
+ * Wow, I used a record, so cool, Java 14+. Happy now?
  * </pre>
- *
- * @author Jonathan Bradley Whited
- * @since 1.0.0
  */
 public record CommandData(
     Map<String,String> globalOpts
