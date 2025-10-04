@@ -89,7 +89,7 @@ public class Option {
     return this;
   }
 
-  public Command end() {
+  public Command end_option() {
     return parent;
   }
 }

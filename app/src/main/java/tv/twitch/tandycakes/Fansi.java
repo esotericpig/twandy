@@ -18,6 +18,7 @@ public class Fansi {
   private PrintStream out;
   private boolean isEnabled = true;
   private final LinkedTrie<String> styles = new LinkedTrie<>();
+  private ParseException lastParseError = null;
 
   public Fansi() {
     this(System.out);
@@ -100,8 +101,9 @@ public class Fansi {
       String style = styles.find(styleKey);
 
       if(style == null) {
-        throw new ParseException(Formatter.format("Invalid style name/alias '{}' with key '{}'."
-            ,styleName,styleKey));
+        throw new IllegalArgumentException(Formatter.format(
+            "Invalid style name/alias '{}' with key '{}'.",styleName,styleKey
+        ));
       }
 
       stylesBuffer.append(style);
@@ -126,8 +128,8 @@ public class Fansi {
    * </pre>
    */
   public String style(String format,Object... args) {
-    if(format.isEmpty()) {
-      return format;
+    if(format == null || format.isEmpty()) {
+      return "";
     }
     if(!isEnabled) {
       return Formatter.format(format,args);
@@ -198,12 +200,13 @@ public class Fansi {
                 String style = styles.find(styleKey);
 
                 if(style == null) {
-                  throw new ParseException(Formatter.format(
-                      "Invalid style name/alias '{}' with key '{}' at index {}."
-                      ,styleName,styleKey,i));
+                  lastParseError = new ParseException(Formatter.format(
+                      "Invalid style name/alias '{}' with key '{}' at index {}.",
+                      styleName,styleKey,i
+                  ));
+                } else {
+                  stylesBuffer.append(style);
                 }
-
-                stylesBuffer.append(style);
               }
 
               styleBuffer.setLength(0); // Reset for the next style.
@@ -349,6 +352,10 @@ public class Fansi {
     this.isEnabled = isEnabled;
   }
 
+  public void clearLastParseError() {
+    lastParseError = null;
+  }
+
   public PrintStream getOut() {
     return out;
   }
@@ -359,5 +366,9 @@ public class Fansi {
 
   public boolean isDisabled() {
     return !isEnabled;
+  }
+
+  public ParseException getLastParseError() {
+    return lastParseError;
   }
 }

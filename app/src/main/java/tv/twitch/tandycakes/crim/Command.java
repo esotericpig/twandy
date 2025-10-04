@@ -164,7 +164,7 @@ public class Command {
     return this;
   }
 
-  public Command end() {
+  public Command end_command() {
     return (parent != null) ? parent : this;
   }
 

@@ -58,10 +58,9 @@ public class Twandy extends Crim {
             gameNameTrie.add(gameName);
           }
         })
+        .runner(this::playGame)
         .option("--fhat","-f")
-          .summary("Run filtered chat.")
-          .end()
-        .runner(this::playGame);
+        .summary("Run filtered chat.");
 
     addDefaults();
   }
