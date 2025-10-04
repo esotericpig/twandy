@@ -59,7 +59,7 @@ public class Option {
     return this;
   }
 
-  public Option runner(CommandRunner runner) {
+  public Option run(CommandRunner runner) {
     this.runner = runner;
     return this;
   }

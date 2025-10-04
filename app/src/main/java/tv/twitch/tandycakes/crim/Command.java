@@ -86,7 +86,7 @@ public class Command {
     return this;
   }
 
-  public Command runner(CommandRunner runner) {
+  public Command run(CommandRunner runner) {
     this.runner = runner;
     return this;
   }

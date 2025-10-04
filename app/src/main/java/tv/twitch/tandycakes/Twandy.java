@@ -48,7 +48,7 @@ public class Twandy extends Crim {
 
     root.command("x","coords")
         .summary("Show coords of cursor.")
-        .runner(this::showCoords);
+        .run(this::showCoords);
 
     root.command("play <game>")
         .summary("Play a game:")
@@ -58,7 +58,7 @@ public class Twandy extends Crim {
             gameNameTrie.add(gameName);
           }
         })
-        .runner(this::playGame)
+        .run(this::playGame)
         .option("--fhat","-f")
         .summary("Run filtered chat.");
 

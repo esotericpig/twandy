@@ -38,7 +38,7 @@ public class Crim {
   public Crim(String appName,String appVersion,String summary) {
     this.appName = appName;
     this.appVersion = appVersion;
-    this.root = new Command(appName).runner(this::runRootCommand);
+    this.root = new Command(appName).run(this::runRootCommand);
     // NOTE: Do NOT use this/root.addCommand().
     this.globalOptions = new Command("__GLOBAL_OPTIONS__").parent(this.root);
 
@@ -63,20 +63,20 @@ public class Crim {
   public Option addHelpGlobalOption() {
     return globalOptions.option("--help","-h")
                         .summary("Show this help.")
-                        .runner(this::runHelpGlobalOption);
+                        .run(this::runHelpGlobalOption);
   }
 
   public Option addVersionOption() {
     return root.option("--version","-v")
                .summary("Show version.")
-               .runner(this::runVersionOption);
+               .run(this::runVersionOption);
   }
 
   public Command addHelpCommand() {
     return root.command("help [commands]")
-               .multiArg()
                .summary("Help with a command.")
-               .runner(this::runHelpCommand);
+               .multiArg()
+               .run(this::runHelpCommand);
   }
 
   public void runRootCommand(Crim crim,Command cmd,CommandData data) {
